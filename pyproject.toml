@@ -1,0 +1,41 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "seqqc"
+description = "FASTQ quality analysis took supporting multi-file comparison"
+readme = "README.md"
+dynamic = ["version"]
+requires-python = " >= 3.11"
+authors = [
+    {name = "Kevin Fritz", email = "kevfritz1@gmail.com"}
+]
+maintainers = [
+    {name = "Kevin Fritz", email = "kevfritz1@gmail.com"}
+]
+dependencies = [
+    "typer>=0.12",
+    "pydantic>=2.0",
+    "plotly>=5.0",
+    "jinja2>=3.0",
+    "rich>=13.0",
+    "cyvcf2>=0.30",
+    "scipy>=1.11",
+    "numpy>=1.26",
+    "pyyaml>=6.0",
+]
+
+[project.scripts]
+seqqc = "seqqc.cli:app"
+
+[tool.hatch.version]
+path = "src/seqqc/__init__.py"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+

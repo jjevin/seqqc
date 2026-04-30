@@ -9,9 +9,8 @@ class Read:
     sequence: str
     quality: list[int]
 
-
-    def __post init__(self) -> None:
-        if len(self.sequence) != self.quality:
+    def __post_init__(self) -> None:
+        if len(self.sequence) != len(self.quality):
             raise ValueError(
                 f"Sequence length {len(self.sequence)} does not match "
                 f"quality length {len(self.quality)} for read {self.name}"
@@ -19,11 +18,12 @@ class Read:
 
 def _decode_quality(raw_quality: str) -> list[int]:
     """Convert ASCII-encoded quality string to Phred integer scores"""
-    return [ord(char) - 33 for char in raw.strip()]
+    return [ord(char) - 33 for char in raw_quality.strip()]
 
 def read_fastq(path: Path) -> Iterator[Read]:
     """
-    Iteratively yield read objects from FASTQ
+    Iteratively yield read objects from FASTQ, only holding one record in memory
+    at any point
     """
     with open(path) as f:
         it = iter(f)
@@ -31,5 +31,5 @@ def read_fastq(path: Path) -> Iterator[Read]:
             yield Read(
                 name = raw_name.strip().lstrip("@"), 
                 sequence = sequence.strip(), 
-                quality = raw_quality.
+                quality = _decode_quality(raw_quality),
             )

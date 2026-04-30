@@ -59,3 +59,15 @@ class TestReadFastq:
     def test_yields_read_objects(self, single_read_file: Path):
         reads = list(read_fastq(single_read_file))
         assert all(isinstance(r, Read) for r in reads)
+
+
+    def test_reads_gzipped_file(self, tmp_path: Path):
+        import gzip
+        content = "\n".join(["@read_1", "ACGT", "+", "IIII"])
+        path = tmp_path / "test.fastq.gz"
+        with gzip.open(path, "wt") as f:
+            f.write(content)
+
+        reads = list(read_fastq(path))
+        assert len(reads) == 1
+        assert reads[0].name == "read_1"

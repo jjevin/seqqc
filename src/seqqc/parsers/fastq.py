@@ -1,6 +1,7 @@
 from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
+import gzip
 
 @dataclass
 class Read:
@@ -25,7 +26,8 @@ def read_fastq(path: Path) -> Iterator[Read]:
     Iteratively yield read objects from FASTQ, only holding one record in memory
     at any point
     """
-    with open(path) as f:
+    opener = gzip.open if path.suffix == ".gz" else open
+    with opener(path, "rt") as f:
         it = iter(f)
         for raw_name, sequence, _, raw_quality in zip(it, it, it, it):
             yield Read(

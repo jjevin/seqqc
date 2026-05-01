@@ -1,5 +1,6 @@
 from pathlib import Path
 import typer
+from seqqc.runner import analyze
 
 app = typer.Typer(
     name="seqqc",
@@ -21,7 +22,8 @@ def run(
     ),
 ) -> None:
     """Performing quality analysis on a single fastq file"""
-    typer.echo(f"Analysing {file} -> {output}")
+    result = analyze(file)
+    typer.echo(f"Reads: {result.read_count.value}")
 
 @app.command()
 def compare(

@@ -7,7 +7,7 @@ class MetricCalculator(ABC):
     @abstractmethod
     def update(self, read: Read) -> None:
         """Processing a single read, updating this class' internal state"""
-        ... # best to use "..." instead of pass?
+        ... # TODO: best to use "..." instead of pass?
 
     @abstractmethod
     def finalize(self) -> MetricResult:

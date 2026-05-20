@@ -38,4 +38,4 @@ jobs:
 
             # Step 5: Run pytest
             - name: Run pytest
-              run: pytest -v --tb=short
+              run: pytest -v --tb=short --cov=seqqc --cov-report=term-missing

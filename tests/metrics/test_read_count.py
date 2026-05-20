@@ -1,5 +1,4 @@
 import pytest
-from pathlib import Path
 from seqqc.parsers.fastq import Read
 from seqqc.metrics.read_count import ReadCountCalculator
 

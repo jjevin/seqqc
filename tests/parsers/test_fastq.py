@@ -60,7 +60,6 @@ class TestReadFastq:
         reads = list(read_fastq(single_read_file))
         assert all(isinstance(r, Read) for r in reads)
 
-
     def test_reads_gzipped_file(self, tmp_path: Path):
         import gzip
         content = "\n".join(["@read_1", "ACGT", "+", "IIII"])

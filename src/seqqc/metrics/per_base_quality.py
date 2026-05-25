@@ -61,5 +61,10 @@ class PerBaseQualityCalculator(MetricCalculator):
         ]
         # TODO: Change the result dataclass to be a singleton that appends instead?
         return PerBaseQualityResult(
-            per_position_medians=[metric.median for metric in metrics]
-    	)
+            first_deciles   = [metric.first_decile   for metric in metrics],
+            first_quartiles = [metric.first_quartile for metric in metrics],
+            medians	    = [metric.median 	     for metric in metrics],
+            third_quartiles = [metric.third_quartile for metric in metrics],
+            ninth_deciles   = [metric.ninth_decile   for metric in metrics],
+            means	    = [metric.mean 	     for metric in metrics]
+        )

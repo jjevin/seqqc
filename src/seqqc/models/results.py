@@ -9,8 +9,12 @@ class ReadCountResult(MetricResult):
 
 class PerBaseQualityResult(MetricResult):
     metric_name: str = "per_base_quality"
-    # TODO: Add metrics besides the median
-    per_position_medians: list[float]
+    first_deciles:   list[float]
+    first_quartiles: list[float]
+    medians:         list[float]
+    third_quartiles: list[float]
+    ninth_deciles:   list[float]
+    means:           list[float]
 
 class QCResult(BaseModel):
     filename: str

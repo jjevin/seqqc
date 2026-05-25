@@ -21,9 +21,9 @@ def run(
         help = "Path for the output HTML report.",
     ),
 ) -> None:
-    """Performing quality analysis on a single fastq file"""
-    result = analyze(file)
-    typer.echo(f"Reads: {result.read_count.value}")
+    """Run quality analysis on a single fastq file"""
+    result = analyze(file, output)
+    typer.echo(f"Report written to {output}	({result.read_count.value:,} reads)")
 
 @app.command()
 def compare(

@@ -16,21 +16,21 @@ class TestPerBaseQuality:
         per_base_quality = PerBaseQualityCalculator()
         per_base_quality.update(make_read([30, 35, 40]))
         result = per_base_quality.finalize()
-        assert result.per_position_medians == [30.0, 35.0, 40.0]
+        assert result.medians == [30.0, 35.0, 40.0]
 
     def test_median_two_identical_reads(self):
         per_base_quality = PerBaseQualityCalculator()
         per_base_quality.update(make_read([20, 30]))
         per_base_quality.update(make_read([20, 30]))
         result = per_base_quality.finalize()
-        assert result.per_position_medians == [20.0, 30.0]
+        assert result.medians == [20.0, 30.0]
 
     def test_median_two_different_reads(self):
         per_base_quality = PerBaseQualityCalculator()
         per_base_quality.update(make_read([10, 20]))
         per_base_quality.update(make_read([30, 40]))
         result = per_base_quality.finalize()
-        assert result.per_position_medians == [20.0, 30.0]
+        assert result.medians == [20.0, 30.0]
 
     def test_median_test_file(self, simple_fastq_file: Path):
         per_base_quality = PerBaseQualityCalculator()
@@ -38,5 +38,5 @@ class TestPerBaseQuality:
         for r in reads:
             per_base_quality.update(r)
         result = per_base_quality.finalize()
-        assert result.per_position_medians == [20] * 4 + [40] * 4
+        assert result.medians == [20] * 4 + [40] * 4
             

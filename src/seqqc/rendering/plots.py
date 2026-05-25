@@ -7,15 +7,6 @@ def per_base_quality(result: PerBaseQualityResult) -> go.Figure():
 
     fig = go.Figure()
 
-    # fig.add_trace(go.Scatter(
-    #     x=positions,
-    #     y=result.medians,
-    #     mode="lines+markers",
-    #     name="Median quality",
-    #     line=dict(color="#2196F3", width=2),
-    #     marker=dict(size=4)
-    # ))
-
     # Percentiles as a histogram
     fig.add_trace(go.Box(
         q1 = result.first_quartiles,
@@ -26,6 +17,8 @@ def per_base_quality(result: PerBaseQualityResult) -> go.Figure():
         mean = result.means,
         name = "Quality percentiles"
     ))
+
+    # TODO: Additional trace for mean lines?
 
     # Background bands matching FastQC's pass/warn/fail thresholds
     # Values derived from Illumina data (see FastQC docs)

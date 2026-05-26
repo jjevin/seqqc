@@ -1,8 +1,11 @@
+from typing import ClassVar
+
 from seqqc.metrics.base import MetricCalculator
 from seqqc.parsers.fastq import Read
 from seqqc.models.results import ReadCountResult
 
 class ReadCountCalculator(MetricCalculator):
+    result_field: ClassVar[str] = "read_count"
 
     def __init__(self) -> None:
         self._count: int = 0

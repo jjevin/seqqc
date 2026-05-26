@@ -11,6 +11,8 @@ def render_report(result: QCResult, output: Path) -> None:
     if result.per_base_quality is not None:
         figures.append(plots.per_base_quality(result.per_base_quality))
 
+    if result.per_base_composition is not None:
+        figures.append(plots.per_base_composition(result.per_base_composition))
 
     # Each figure becomes an HTML fragment
     # include_plotlyjs=False because the template loads it once from CDN

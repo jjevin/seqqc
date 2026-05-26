@@ -1,5 +1,6 @@
 import numpy as np
 from dataclasses import dataclass
+from typing import ClassVar
 
 from seqqc.metrics.base import MetricCalculator
 from seqqc.parsers.fastq import Read
@@ -15,6 +16,7 @@ class _HistogramMetrics():
     mean:	    float
 
 class PerBaseQualityCalculator(MetricCalculator):
+    result_field: ClassVar[str] = "per_base_quality"
 
     # Illumina Phred scores run from 0-42
     # Using this to create a histogram for our median calculations
@@ -66,5 +68,5 @@ class PerBaseQualityCalculator(MetricCalculator):
             medians	    = [metric.median 	     for metric in metrics],
             third_quartiles = [metric.third_quartile for metric in metrics],
             ninth_deciles   = [metric.ninth_decile   for metric in metrics],
-            means	    = [metric.mean 	     for metric in metrics]
+            means           = [metric.mean           for metric in metrics]
         )

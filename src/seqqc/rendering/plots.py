@@ -39,7 +39,7 @@ def per_base_quality(result: PerBaseQualityResult) -> go.Figure():
 
     return fig
 
-def per_base_composition(result: PerBaseCompositionResult) -> go.Figure():
+def per_base_sequence_composition(result: PerBaseCompositionResult) -> go.Figure():
     # TODO: Should be same length for all, but might want to take max anyways?
     positions = list(range(1, len(result.a_percentage)))
 
@@ -47,44 +47,69 @@ def per_base_composition(result: PerBaseCompositionResult) -> go.Figure():
 
     fig.add_trace(go.Scatter(
         x = positions,
-        y = result.a_percentage,
+        y = [a * 100 for a in result.a_percentage],
         mode='lines',
         name='%A'
     ))
 
     fig.add_trace(go.Scatter(
         x = positions,
-        y = result.t_percentage,
+        y = [t * 100 for t in result.t_percentage],
         mode='lines',
         name='%T'
     ))
 
     fig.add_trace(go.Scatter(
         x = positions,
-        y = result.g_percentage,
+        y = [g * 100 for g in result.g_percentage],
         mode='lines',
         name='%G'
     ))
 
     fig.add_trace(go.Scatter(
         x = positions,
-        y = result.c_percentage,
+        y = [c * 100 for c in result.c_percentage],
         mode='lines',
         name='%C'
     ))
 
+    fig.update_layout(
+        title="Per-Base Sequence Content",
+        xaxis_title="Position in read (bp)",
+        yaxis_title="Percent content",
+        yaxis=dict(range=[0, 100]),
+        template="plotly_white",
+        hovermode="x unified"
+    )
+
+    return fig
+
+def per_base_n_composition(result: PerBaseCompositionResult) -> go.Figure():
+    # TODO: Should be same length for all, but might want to take max anyways?
+    positions = list(range(1, len(result.n_percentage)))
+    n_percentage = [n * 100 for n in result.n_percentage]
+
+    fig = go.Figure()
+
     fig.add_trace(go.Scatter(
         x = positions,
-        y = result.n_percentage,
+        y = n_percentage,
         mode='lines',
         name='%N'
     ))
 
+    # Background bands matching FastQC's pass/warn/fail thresholds
+    # Values derived from Illumina data (see FastQC docs)
+    fig.add_hrect(y0=0,  y1=5,   fillcolor="green",  opacity=0.09, line_width=0)
+    fig.add_hrect(y0=5,  y1=20,  fillcolor="orange", opacity=0.09, line_width=0)
+    fig.add_hrect(y0=20, y1=100, fillcolor="red",    opacity=0.09, line_width=0)
+
+    max_y = max(35, max(n_percentage) + 5)
     fig.update_layout(
-        title="Per-base sequence content",
+        title="Per-Base N Content",
         xaxis_title="Position in read (bp)",
         yaxis_title="Percent content",
-        # yaxis=dict(range=[0, 100]),
+        yaxis=dict(range=[0, max_y]),
         template="plotly_white",
         hovermode="x unified"
     )

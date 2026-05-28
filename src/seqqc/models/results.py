@@ -24,9 +24,14 @@ class PerBaseCompositionResult(MetricResult):
     c_percentage: list[float]
     n_percentage: list[float]
 
+class PerReadQualityResult(MetricResult):
+    metric_name: str = "per_read_quality"
+    avg_qualities: list[int]
+
 class QCResult(BaseModel):
     filename: str
     read_count: ReadCountResult | None = None
     per_base_quality: PerBaseQualityResult | None = None
     per_base_composition: PerBaseCompositionResult | None = None
+    per_read_quality: PerReadQualityResult | None = None
     # TODO: future metric results added here as optional fields

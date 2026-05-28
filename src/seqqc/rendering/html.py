@@ -15,6 +15,9 @@ def render_report(result: QCResult, output: Path) -> None:
         figures.append(plots.per_base_sequence_composition(result.per_base_composition))
         figures.append(plots.per_base_n_composition(result.per_base_composition))
 
+    if result.per_read_quality is not None:
+        figures.append(plots.per_read_quality(result.per_read_quality))
+
     # Each figure becomes an HTML fragment
     # include_plotlyjs=False because the template loads it once from CDN
     plot_fragments = [

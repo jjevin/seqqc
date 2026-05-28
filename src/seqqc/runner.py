@@ -5,13 +5,15 @@ from seqqc.metrics.base import MetricCalculator
 from seqqc.metrics.read_count import ReadCountCalculator
 from seqqc.metrics.per_base_quality import PerBaseQualityCalculator
 from seqqc.metrics.per_base_composition import PerBaseCompositionCalculator
+from seqqc.metrics.per_read_quality import PerReadQualityCalculator
 from seqqc.models.results import QCResult
 from seqqc.rendering.html import render_report
 
 _default_calculators: list[MetricCalculator] = [
     ReadCountCalculator(),
     PerBaseQualityCalculator(),
-    PerBaseCompositionCalculator()
+    PerBaseCompositionCalculator(),
+    PerReadQualityCalculator()
 ]
 
 def analyze(

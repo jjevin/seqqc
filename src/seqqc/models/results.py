@@ -1,5 +1,7 @@
 from pydantic import BaseModel
 
+from collections import Counter
+
 class MetricResult(BaseModel):
     metric_name: str
 
@@ -28,10 +30,22 @@ class PerReadQualityResult(MetricResult):
     metric_name: str = "per_read_quality"
     avg_qualities: list[int]
 
+class PerReadLengthResult(MetricResult):
+    metric_name: str = "per_read_length"
+    length_counter: Counter
+    #read_lengths: list[int]
+
+class PerReadGCResult(MetricResult):
+    metric_name: str = "per_read_gc"
+    gc_distribution: list[float]
+    mean_gc: float
+
 class QCResult(BaseModel):
     filename: str
-    read_count: ReadCountResult | None = None
-    per_base_quality: PerBaseQualityResult | None = None
+    read_count:           ReadCountResult          | None = None
+    per_base_quality:     PerBaseQualityResult     | None = None
     per_base_composition: PerBaseCompositionResult | None = None
-    per_read_quality: PerReadQualityResult | None = None
+    per_read_quality:     PerReadQualityResult     | None = None
+    per_read_length:      PerReadLengthResult      | None = None
+    per_read_gc:          PerReadGCResult          | None = None
     # TODO: future metric results added here as optional fields

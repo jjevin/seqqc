@@ -8,6 +8,7 @@ def render_report(result: QCResult, output: Path) -> None:
     """Render a QCResult to a self-contained HTML report at 'output'"""
     figures = []
 
+    # TODO: Is there a better way to do this? This is becoming pretty repetitive
     if result.per_base_quality is not None:
         figures.append(plots.per_base_quality(result.per_base_quality))
 
@@ -18,6 +19,12 @@ def render_report(result: QCResult, output: Path) -> None:
     if result.per_read_quality is not None:
         figures.append(plots.per_read_quality(result.per_read_quality))
 
+    if result.per_read_length is not None:
+        figures.append(plots.per_read_length(result.per_read_length))
+
+    if result.per_read_gc is not None:
+        figures.append(plots.per_read_gc(result.per_read_gc))
+    
     # Each figure becomes an HTML fragment
     # include_plotlyjs=False because the template loads it once from CDN
     plot_fragments = [

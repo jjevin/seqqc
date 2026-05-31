@@ -1,8 +1,13 @@
 import plotly.graph_objects as go
+import numpy as np
+from scipy.ndimage import gaussian_filter1d  # For converting hist to distr
 
 from seqqc.models.results import PerBaseQualityResult
 from seqqc.models.results import PerBaseCompositionResult
 from seqqc.models.results import PerReadQualityResult
+from seqqc.models.results import PerReadLengthResult
+from seqqc.models.results import PerReadGCResult
+# TODO: Replace with import seqqc.models.results to just import all? 
 
 def per_base_quality(result: PerBaseQualityResult) -> go.Figure():
     # TODO: Should be same length for all, but might want to take max anyways?
@@ -28,9 +33,6 @@ def per_base_quality(result: PerBaseQualityResult) -> go.Figure():
         mode='lines',
         name='Means'
     ))
-
-
-    # TODO: Additional trace for mean lines?
 
     # Background bands matching FastQC's pass/warn/fail thresholds
     # Values derived from Illumina data (see FastQC docs)
@@ -82,6 +84,9 @@ def per_base_sequence_composition(result: PerBaseCompositionResult) -> go.Figure
         mode='lines',
         name='%C'
     ))
+
+    # TODO: Add banding for quality? Comparing A and T or G and C?
+    # Would need to be delta between those two pairs
 
     fig.update_layout(
         title="Per-Base Sequence Content",
@@ -147,9 +152,77 @@ def per_read_quality(result: PerReadQualityResult) -> go.Figure():
     fig.update_layout(
         title="Per Read Quality Scores",
         xaxis_title="Mean read quality (Phred Score)",
-        # yaxis_title="",
         template="plotly_white",
         hovermode="x unified"
     )
+
+    return fig
+
+def per_read_length(result: PerReadLengthResult) -> go.Figure():
+    positions = list(result.length_counter.keys())
+    read_lengths = list(result.length_counter.elements())
+    
+    fig = go.Figure()
+
+    fig.add_trace(go.Bar(
+        x = positions,
+        y = read_lengths,
+        name='Read Length'
+    ))
+
+    # TODO: Bands indicating thresholds
+    # - FastQC warns if there are differing lengths, fails if there's a length of 0
+    # TODO: Somway to make this look better with only 1 set of lengths?
+
+    # TODO: Only show whole units on x axis
+    fig.update_layout(
+        title="Per Read Length",
+        xaxis_title="Read quality (np)",
+        template="plotly_white",
+        hovermode="x unified"
+    )
+
+    return fig
+
+def per_read_gc(result: PerReadGCResult) -> go.Figure():
+    positions = list(range(101))
+    counts = np.array(result.gc_distribution, dtype=float)
+    total = counts.sum()
+
+    # Express as percentage of reads rather than raw counts
+    frequencies = (counts / total * 100) if total > 0 else counts
+
+    # sigma controls smoothing width -> 3 gives a curve similar to FastQC's
+    smoothed = gaussian_filter1d(frequencies, sigma=3)
+
+    fig = go.Figure()
+
+    fig.add_trace(go.Bar(
+        x=positions,
+        y=frequencies,
+        name="Observed",
+        marker_color="rgba(33, 150, 243, 0.35)",
+        marker_line_width=0
+    ))
+
+    fig.add_trace(go.Scatter(
+        x=positions,
+        y=smoothed,
+        mode="lines",
+        name="Smoothed",
+        line=dict(color="#1565C0", width=2)
+    ))
+
+    fig.update_layout(
+        title="Per-read GC content",
+        xaxis_title="GC content (%)",
+        yaxis_title="Percentage of reads",
+        xaxis=dict(range=[0, 100]),
+        template="plotly_white",
+        bargap=0,
+    )
+
+    # TODO: Add normal curve for reference
+    # TODO: Add some bands to indicate quality thresholds?
 
     return fig

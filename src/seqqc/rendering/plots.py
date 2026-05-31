@@ -9,9 +9,8 @@ from seqqc.models.results import PerReadLengthResult
 from seqqc.models.results import PerReadGCResult
 # TODO: Replace with import seqqc.models.results to just import all? 
 
-def per_base_quality(result: PerBaseQualityResult) -> go.Figure():
-    # TODO: Should be same length for all, but might want to take max anyways?
-    positions = list(range(1, len(result.medians)))
+def per_base_quality(result: PerBaseQualityResult) -> go.Figure:
+    positions = list(range(1, len(result.medians)+1))
 
     fig = go.Figure()
 
@@ -51,9 +50,8 @@ def per_base_quality(result: PerBaseQualityResult) -> go.Figure():
 
     return fig
 
-def per_base_sequence_composition(result: PerBaseCompositionResult) -> go.Figure():
-    # TODO: Should be same length for all, but might want to take max anyways?
-    positions = list(range(1, len(result.a_percentage)))
+def per_base_sequence_composition(result: PerBaseCompositionResult) -> go.Figure:
+    positions = list(range(1, len(result.a_percentage) + 1))
 
     fig = go.Figure()
 
@@ -99,9 +97,8 @@ def per_base_sequence_composition(result: PerBaseCompositionResult) -> go.Figure
 
     return fig
 
-def per_base_n_composition(result: PerBaseCompositionResult) -> go.Figure():
-    # TODO: Should be same length for all, but might want to take max anyways?
-    positions = list(range(1, len(result.n_percentage)))
+def per_base_n_composition(result: PerBaseCompositionResult) -> go.Figure:
+    positions = list(range(1, len(result.n_percentage) + 1))
     n_percentage = [n * 100 for n in result.n_percentage]
 
     fig = go.Figure()
@@ -131,9 +128,8 @@ def per_base_n_composition(result: PerBaseCompositionResult) -> go.Figure():
 
     return fig
 
-def per_read_quality(result: PerReadQualityResult) -> go.Figure():
-    # TODO: Should be same length for all, but might want to take max anyways?
-    positions = list(range(42))
+def per_read_quality(result: PerReadQualityResult) -> go.Figure:
+    positions = list(range(43))
 
     fig = go.Figure()
 
@@ -158,16 +154,16 @@ def per_read_quality(result: PerReadQualityResult) -> go.Figure():
 
     return fig
 
-def per_read_length(result: PerReadLengthResult) -> go.Figure():
-    positions = list(result.length_counter.keys())
-    read_lengths = list(result.length_counter.elements())
+def per_read_length(result: PerReadLengthResult) -> go.Figure:
+    positions = list(result.length_distribution.keys())
+    counts = list(result.length_distribution.values())
     
     fig = go.Figure()
 
     fig.add_trace(go.Bar(
         x = positions,
-        y = read_lengths,
-        name='Read Length'
+        y = counts,
+        name='Read count'
     ))
 
     # TODO: Bands indicating thresholds
@@ -184,7 +180,7 @@ def per_read_length(result: PerReadLengthResult) -> go.Figure():
 
     return fig
 
-def per_read_gc(result: PerReadGCResult) -> go.Figure():
+def per_read_gc(result: PerReadGCResult) -> go.Figure:
     positions = list(range(101))
     counts = np.array(result.gc_distribution, dtype=float)
     total = counts.sum()

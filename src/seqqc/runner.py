@@ -12,20 +12,25 @@ from seqqc.metrics.per_read_gc import PerReadGCCalculator
 from seqqc.models.results import QCResult
 from seqqc.rendering.html import render_report
 
-_default_calculators: list[MetricCalculator] = [
-    ReadCountCalculator(),
-    PerBaseQualityCalculator(),
-    PerBaseCompositionCalculator(),
-    PerReadQualityCalculator(),
-    PerReadLengthCalculator(),
-    PerReadGCCalculator()
-]
+# Necessary for clearing calculator instance when calling analyze() twice
+def _default_calculators() -> list[MetricCalculator]:
+    return [
+        ReadCountCalculator(),
+        PerBaseQualityCalculator(),
+        PerBaseCompositionCalculator(),
+        PerReadQualityCalculator(),
+        PerReadLengthCalculator(),
+        PerReadGCCalculator()
+    ]
 
 def analyze(
     path: Path, 
     output: Path,
-    calculators: list[MetricCalculator] = _default_calculators
+    calculators: list[MetricCalculator] | None = None
 ) -> QCResult:
+    if calculators is None:
+        calculators = _default_calculators()
+        
     for read in read_fastq(path):
         for calc in calculators:
             calc.update(read)

@@ -32,8 +32,11 @@ class PerReadQualityResult(MetricResult):
 
 class PerReadLengthResult(MetricResult):
     metric_name: str = "per_read_length"
-    length_counter: Counter
-    #read_lengths: list[int]
+    length_distribution: dict[int, int] # length -> read count
+    mean: float
+    median: float
+    n50: int
+    
 
 class PerReadGCResult(MetricResult):
     metric_name: str = "per_read_gc"

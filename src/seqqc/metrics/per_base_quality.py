@@ -7,14 +7,14 @@ from seqqc.parsers.fastq import Read
 from seqqc.models.results import PerBaseQualityResult
 
 @dataclass
-class _HistogramMetrics():
+class _HistogramMetrics:
     first_decile:   float
     first_quartile: float
-    median: 	    float
+    median:         float
     third_quartile: float
     ninth_decile:   float
-    mean:	    float
-
+    mean:           float
+    
 class PerBaseQualityCalculator(MetricCalculator):
     result_field: ClassVar[str] = "per_base_quality"
 
@@ -23,7 +23,6 @@ class PerBaseQualityCalculator(MetricCalculator):
     _MAX_PHRED: int = 42
     
     def __init__(self) -> None:
-        # TODO: np.ndarray? 
         self._histograms: list[np.ndarray] = []
 
     def _ensure_capacity(self, length: int) -> None:
@@ -40,20 +39,41 @@ class PerBaseQualityCalculator(MetricCalculator):
             clamped = min(score, self._MAX_PHRED)
             self._histograms[pos][clamped] += 1
 
-    # TODO: This currently loads the entire set of reads for a lane in memory.
-    # Better than base case (all reads for all lanes), but worse than using the
-    # histogram directly. Try refactoring to not use the scores array.
-    def _metrics_from_histogram(self, hist: np.ndarray) -> float:
-        bins = list(range(self._MAX_PHRED + 1))
-        scores = np.array(np.repeat(bins, hist))
+    @staticmethod
+    def _quantile_from_histogram(hist: np.ndarray, q:float) -> float:
+        """Compute quantile q from a histogram via CDF interpolation"""
+        # h is the fractional index of the virtual sorted observation array
+        # This matches numpy's 'linear' interpolation method for np.quantile
+        # See https://numpy.org/doc/stable/reference/generated/numpy.quantile.html
+        total = hist.sum()
+        h = q * (total - 1)
+        floor_h = int(np.floor(h))
+        ceil_h = min(int(np.ceil(h)), int(total)-1)
+        frac = h - floor_h
+
+        cumsum = np.cumsum(hist)
+
+        # Find which bin contains the floor and ceiling of observations
+        # side='right' gives the first bin where cumsum exceeds the index
+        low_bin  = min(int(np.searchsorted(cumsum, floor_h, side='right')), len(hist) - 1)
+        high_bin = min(int(np.searchsorted(cumsum, ceil_h, side='right')), len(hist) - 1)
+
+        return low_bin + frac * (high_bin - low_bin)
+
+    def _metrics_from_histogram(self, hist: np.ndarray) -> _HistogramMetrics:
+        if hist.sum() == 0:
+            return  _HistogramMetrics(0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+
+        bins = np.arange(len(hist))
+        mean = float(np.average(bins, weights=hist))
+
         return _HistogramMetrics(
-            # TODO: See about different quantile estimation methods
-            np.quantile(scores, 0.10),
-            np.quantile(scores, 0.25),
-            np.quantile(scores, 0.50),
-            np.quantile(scores, 0.75),
-            np.quantile(scores, 0.90),
-            np.mean(scores)
+            first_decile   = self._quantile_from_histogram(hist, 0.10),
+            first_quartile = self._quantile_from_histogram(hist, 0.25),
+            median         = self._quantile_from_histogram(hist, 0.50),
+            third_quartile = self._quantile_from_histogram(hist, 0.75),
+            ninth_decile   = self._quantile_from_histogram(hist, 0.90),
+            mean           = mean,
         )
 
     def finalize(self) -> PerBaseQualityResult:
@@ -65,7 +85,7 @@ class PerBaseQualityCalculator(MetricCalculator):
         return PerBaseQualityResult(
             first_deciles   = [metric.first_decile   for metric in metrics],
             first_quartiles = [metric.first_quartile for metric in metrics],
-            medians	    = [metric.median 	     for metric in metrics],
+            medians         = [metric.median         for metric in metrics],
             third_quartiles = [metric.third_quartile for metric in metrics],
             ninth_deciles   = [metric.ninth_decile   for metric in metrics],
             means           = [metric.mean           for metric in metrics]

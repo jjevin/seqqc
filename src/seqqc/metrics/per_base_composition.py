@@ -33,7 +33,9 @@ class PerBaseCompositionCalculator(MetricCalculator):
     def update(self, read: Read) -> None:
         self._ensure_capacity(len(read.sequence))
         for pos, base in enumerate(read.sequence):
-            self._composition[pos][base] += 1
+            # Accounting for IUPAC ambiguity codes (R, Y, K, ...)
+            field = base if base in ('A', 'T', 'G', 'C', 'N') else 'N'
+            self._composition[pos][field] += 1
             self._composition[pos]['Total'] += 1
 
     def finalize(self) -> PerBaseCompositionResult:

@@ -6,6 +6,7 @@ from seqqc.metrics.base import MetricCalculator
 from seqqc.parsers.fastq import Read
 from seqqc.models.results import PerBaseQualityResult
 
+# Internal dataclass for passing grouped metrics between helpers
 @dataclass
 class _HistogramMetrics:
     first_decile:   float

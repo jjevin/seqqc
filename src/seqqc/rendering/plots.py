@@ -8,7 +8,6 @@ from seqqc.models.results import PerBaseCompositionResult
 from seqqc.models.results import PerReadQualityResult
 from seqqc.models.results import PerReadLengthResult
 from seqqc.models.results import PerReadGCResult
-# TODO: Replace with import seqqc.models.results to just import all? 
 
 def per_base_quality(result: PerBaseQualityResult) -> go.Figure:
     positions = list(range(1, len(result.medians)+1))
@@ -22,7 +21,6 @@ def per_base_quality(result: PerBaseQualityResult) -> go.Figure:
         q3 = result.third_quartiles,
         lowerfence = result.first_deciles,
         upperfence = result.ninth_deciles,
-        # mean = result.means,
         x = positions,
         name = "Quality percentiles"
     ))

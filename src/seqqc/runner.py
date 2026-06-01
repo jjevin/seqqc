@@ -1,7 +1,6 @@
 from pathlib import Path
 
 from seqqc.parsers.fastq import read_fastq
-# TODO: Better just to import as import seqqc.metrics.*?
 from seqqc.metrics.base import MetricCalculator
 from seqqc.metrics.read_count import ReadCountCalculator
 from seqqc.metrics.per_base_quality import PerBaseQualityCalculator
@@ -40,7 +39,6 @@ def analyze(
         for calc in calculators 
     }
 
-    # TODO: Look into dictionary unpacking
     result = QCResult(filename=path.name, **metric_results)
     render_report(result, output)
     return result

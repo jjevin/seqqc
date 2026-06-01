@@ -2,8 +2,8 @@ name: Generate sample report
 
 on:
     push:
-        branches: [main]
-        paths:	# Only regenerate when source or data changes
+        branches: [master]
+        paths:  # Only regenerate when source or data changes
         - "src/**"
         - "data/**"
         - "pyproject.toml"

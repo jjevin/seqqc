@@ -25,6 +25,7 @@ def _default_calculators() -> list[MetricCalculator]:
 def analyze(
     path: Path, 
     output: Path,
+    json_path: Path | None = None,
     calculators: list[MetricCalculator] | None = None
 ) -> QCResult:
     if calculators is None:
@@ -41,5 +42,9 @@ def analyze(
 
     result = QCResult(filename=path.name, **metric_results)
     render_report(result, output)
+
+    if json_path is not None:
+        json_path.write_text(result.model_dump_json(indent=2), encoding="utf-8")
+        
     return result
 

@@ -82,11 +82,11 @@ A sample report generated from a small test dataset is available at [`examples/s
 
 ### Output formats
 
-| Format                  | Status      | Notes                                          |
-|-------------------------|-------------|------------------------------------------------|
-| Interactive HTML report | Complete    | Self-contained, using Plotly for visualization |
-| JSON output             | In progress | Using Pydantic for JSON encoding               |
-| Terminal summary        | Planned     | Using `rich` for rich text output              |
+| Format                  | Status   | Notes                                          |
+|-------------------------|----------|------------------------------------------------|
+| Interactive HTML report | Complete | Self-contained, using Plotly for visualization |
+| JSON output             | Complete | Using Pydantic for JSON encoding               |
+| Terminal summary        | Planned  | Using `rich` for rich text output              |
 
 --- 
 

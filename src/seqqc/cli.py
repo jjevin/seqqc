@@ -20,9 +20,14 @@ def run(
         "--output", "-o",
         help = "Path for the output HTML report.",
     ),
+    json_output: Path | None = typer.Option(
+        None,
+        "--json", "-j",
+        help = "Write results as JSON to this path."
+    )
 ) -> None:
     """Run quality analysis on a single fastq file"""
-    result = analyze(file, output)
+    result = analyze(file, output, json_path=json_output)
     typer.echo(f"Report written to {output}	({result.read_count.value:,} reads)")
 
 @app.command()

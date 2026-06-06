@@ -1,20 +1,12 @@
+import warnings
 import numpy as np
 from dataclasses import dataclass
+from scipy.optimize import curve_fit, OptimizeWarning
 from typing import ClassVar
 
 from seqqc.metrics.base import MetricCalculator
 from seqqc.parsers.fastq import Read
 from seqqc.models.results import PerBaseQualityResult
-
-# Internal dataclass for passing grouped metrics between helpers
-@dataclass
-class _HistogramMetrics:
-    first_decile:   float
-    first_quartile: float
-    median:         float
-    third_quartile: float
-    ninth_decile:   float
-    mean:           float
     
 class PerBaseQualityCalculator(MetricCalculator):
     result_field: ClassVar[str] = "per_base_quality"
@@ -61,33 +53,83 @@ class PerBaseQualityCalculator(MetricCalculator):
 
         return low_bin + frac * (high_bin - low_bin)
 
-    def _metrics_from_histogram(self, hist: np.ndarray) -> _HistogramMetrics:
-        if hist.sum() == 0:
-            return  _HistogramMetrics(0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+    def _compute_metrics(self) -> dict[str, list[float]]:
+        """Compute all per-position metrics in a single histogram pass.
+        Dict keys match PerBaseQualityResult field names for unpacking."""
+        n    = len(self._histograms)
+        bins = np.arange(self._MAX_PHRED + 1)
 
-        bins = np.arange(len(hist))
-        mean = float(np.average(bins, weights=hist))
+        # TODO: Instantiate as zeroes, versus appending in loop?
+        first_deciles   = [0.0] * n
+        first_quartiles = [0.0] * n
+        medians         = [0.0] * n
+        third_quartiles = [0.0] * n
+        ninth_deciles   = [0.0] * n
+        means           = [0.0] * n
 
-        return _HistogramMetrics(
-            first_decile   = self._quantile_from_histogram(hist, 0.10),
-            first_quartile = self._quantile_from_histogram(hist, 0.25),
-            median         = self._quantile_from_histogram(hist, 0.50),
-            third_quartile = self._quantile_from_histogram(hist, 0.75),
-            ninth_decile   = self._quantile_from_histogram(hist, 0.90),
-            mean           = mean,
-        )
+        for i, hist in enumerate(self._histograms):
+            if hist.sum() == 0:
+                continue
+            first_deciles[i]   = self._quantile_from_histogram(hist, 0.10)
+            first_quartiles[i] = self._quantile_from_histogram(hist, 0.25)
+            medians[i]         = self._quantile_from_histogram(hist, 0.50)
+            third_quartiles[i] = self._quantile_from_histogram(hist, 0.75)
+            ninth_deciles[i]   = self._quantile_from_histogram(hist, 0.90)
+            means[i]           = float(np.average(bins, weights=hist))
+
+        return {
+            "first_deciles":   first_deciles,
+            "first_quartiles": first_quartiles,
+            "medians":         medians,
+            "third_quartiles": third_quartiles,
+            "ninth_deciles":   ninth_deciles,
+            "means":           means,
+        }
+            
+    @staticmethod
+    def _fit_decay(medians: list[float]) -> tuple[float, float, float]:
+        """Fit Q(x) = Q_0 * exp(lambda * x) to per-position median quality scores.
+        Returns (Q_0, decay constant lambda, R^2).
+        If profile is too flat, returns (mean, 0.0, 0.0) as default"""
+        
+        y = np.array(medians, dtype=float)
+        x = np.arange(len(y), dtype=float)
+
+        # Guard: if the quality range is less that 2 Phred units, an exponential
+        # model is unlikely to fit; meaning lambda ~= 0, no fitting needed
+        if y.max() - y.min() < 2.0:
+            return float(y.mean()), 0.0, 0.0
+
+        try:
+            with warnings.catch_warnings():
+                warnings.filterwarnings("error", category=OptimizeWarning)
+                params, _ = curve_fit(
+                    # Initial guess: Q_0 at first position, small decay
+                    lambda x, q0, lam: q0 * np.exp(-lam * x),
+                    x, y,
+                    p0=[float(y.max()), 0.01],
+                    maxfev=2000
+                )
+            q0, lam = params
+            y_pred = q0 * np.exp(-lam * x)
+            ss_res = np.sum((y - y_pred) ** 2)
+            ss_tot = np.sum((y - y.mean()) ** 2)
+            r_squared = 1 - ss_res / ss_tot if ss_tot > 0 else 0.0
+            return float(q0), float(lam), float(r_squared)
+        
+        except (RuntimeError, OptimizeWarning):
+            # RuntimeError: maxfex reached w/o convergence
+            # OptimizeWarning: Covariance matrix could not be estimated -> degenerate fit
+            return float(y.mean()), 0.0, 0.0
 
     def finalize(self) -> PerBaseQualityResult:
-        """Returning a pydantic dump of metric results"""
-        metrics = [
-            self._metrics_from_histogram(h) for h in self._histograms
-        ]
-        # TODO: Change the result dataclass to be a singleton that appends instead?
+        data = self._compute_metrics()
+        q0, lam, r_squared = self._fit_decay(data["medians"])
+
         return PerBaseQualityResult(
-            first_deciles   = [metric.first_decile   for metric in metrics],
-            first_quartiles = [metric.first_quartile for metric in metrics],
-            medians         = [metric.median         for metric in metrics],
-            third_quartiles = [metric.third_quartile for metric in metrics],
-            ninth_deciles   = [metric.ninth_decile   for metric in metrics],
-            means           = [metric.mean           for metric in metrics]
+            **data,
+            decay_initial_quality=q0,
+            decay_constant=lam,
+            decay_r_squared=r_squared,
         )
+        

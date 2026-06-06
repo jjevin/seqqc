@@ -11,12 +11,15 @@ class ReadCountResult(MetricResult):
 
 class PerBaseQualityResult(MetricResult):
     metric_name: str = "per_base_quality"
-    first_deciles:   list[float]
-    first_quartiles: list[float]
-    medians:         list[float]
-    third_quartiles: list[float]
-    ninth_deciles:   list[float]
-    means:           list[float]
+    first_deciles:         list[float]
+    first_quartiles:       list[float]
+    medians:               list[float]
+    third_quartiles:       list[float]
+    ninth_deciles:         list[float]
+    means:                 list[float]
+    decay_initial_quality: float
+    decay_constant:        float
+    decay_r_squared:       float
 
 class PerBaseCompositionResult(MetricResult):
     metric_name: str = "per_base_composition"

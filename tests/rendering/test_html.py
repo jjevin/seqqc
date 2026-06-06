@@ -15,7 +15,10 @@ def minimal_result() -> QCResult:
             medians=[3, 3, 3],
             third_quartiles=[4, 4, 4],
             ninth_deciles=[5, 5, 5],
-            means=[3, 3, 3]
+            means=[3, 3, 3],
+            decay_constant=0,
+            decay_initial_quality=0,
+            decay_r_squared=0
         )
     )
 

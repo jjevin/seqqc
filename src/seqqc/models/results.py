@@ -1,6 +1,6 @@
-from pydantic import BaseModel
-
+from pydantic import BaseModel, ConfigDict
 from collections import Counter
+from enum import Enum
 
 class MetricResult(BaseModel):
     metric_name: str
@@ -40,11 +40,36 @@ class PerReadLengthResult(MetricResult):
     median: float
     n50: int
     
-
 class PerReadGCResult(MetricResult):
     metric_name: str = "per_read_gc"
     gc_distribution: list[float]
     mean_gc: float
+
+class CheckStatus(Enum):
+    PASS = "pass"
+    WARN = "warn"
+    FAIL = "fail"
+
+class EvaluationResult(BaseModel):
+    checks: dict[str, CheckStatus]
+    # TODO: Look up ConfigDict use cases
+    model_config = ConfigDict(use_enum_values=False)
+
+    @property
+    def passed_all(self) -> bool:
+        """True only when every configured check passes (warnings not blocking)"""
+        return all(s in (CheckStatus.PASS, CheckStatus.WARN)
+                   for s in self.checks.values())
+
+    @property
+    def failed_checks(self) -> list[str]:
+        return [name for name, status in self.checks.items()
+                if status == CheckStatus.FAIL]
+    @property
+    def warned_checks(self) -> list[str]:
+        return [name for name, status in self.checks.items()
+                if status == CheckStatus.WARN]
+
 
 class QCResult(BaseModel):
     filename: str
@@ -55,3 +80,4 @@ class QCResult(BaseModel):
     per_read_length:      PerReadLengthResult      | None = None
     per_read_gc:          PerReadGCResult          | None = None
     # TODO: future metric results added here as optional fields
+    evaluation:           EvaluationResult         | None = None

@@ -8,8 +8,12 @@ from seqqc.models.results import PerBaseCompositionResult
 from seqqc.models.results import PerReadQualityResult
 from seqqc.models.results import PerReadLengthResult
 from seqqc.models.results import PerReadGCResult
+from seqqc.thresholds.schema import ThresholdConfig
 
-def per_base_quality(result: PerBaseQualityResult) -> go.Figure:
+def per_base_quality(
+    result: PerBaseQualityResult,
+    config: ThresholdConfig | None = None,
+) -> go.Figure:
     positions = list(range(1, len(result.medians)+1))
 
     fig = go.Figure()
@@ -49,8 +53,16 @@ def per_base_quality(result: PerBaseQualityResult) -> go.Figure:
 
     return fig
 
-def per_base_sequence_composition(result: PerBaseCompositionResult) -> go.Figure:
+def per_base_sequence_composition(
+    result: PerBaseCompositionResult,
+    config: ThresholdConfig | None = None,
+) -> go.Figure:
     positions = list(range(1, len(result.a_percentage) + 1))
+    
+    threshold_pair = config.max_gc_content_diff if config else None
+    warn_n = (threshold_pair.warn * 100) if threshold_pair else 10.0
+    fail_n = (threshold_pair.fail * 100) if threshold_pair else 20.0
+    
     a = np.array(result.a_percentage) * 100
     t = np.array(result.t_percentage) * 100
     c = np.array(result.g_percentage) * 100
@@ -62,10 +74,11 @@ def per_base_sequence_composition(result: PerBaseCompositionResult) -> go.Figure
 
     fig = go.Figure()
 
+    # Add highlights for regions for warning and failing regions
     for i, (pos, diff) in enumerate(zip(positions, max_diff)):
-        if diff > 20:
+        if diff > fail_n:
             color, opacity = "red", 0.12
-        elif diff > 10:
+        elif diff > warn_n:
             color, opacity = "orange", 0.10
         else:
             continue
@@ -91,9 +104,16 @@ def per_base_sequence_composition(result: PerBaseCompositionResult) -> go.Figure
 
     return fig
 
-def per_base_n_composition(result: PerBaseCompositionResult) -> go.Figure:
+def per_base_n_composition(
+    result: PerBaseCompositionResult,
+    config: ThresholdConfig | None = None,
+) -> go.Figure:
     positions = list(range(1, len(result.n_percentage) + 1))
     n_percentage = [n * 100 for n in result.n_percentage]
+
+    threshold_pair = config.max_n_fraction if config else None
+    warn_n = (threshold_pair.warn * 100) if threshold_pair else 5.0
+    fail_n = (threshold_pair.fail * 100) if threshold_pair else 20.0
 
     fig = go.Figure()
 
@@ -105,10 +125,9 @@ def per_base_n_composition(result: PerBaseCompositionResult) -> go.Figure:
     ))
 
     # Background bands matching FastQC's pass/warn/fail thresholds
-    # Values derived from Illumina data (see FastQC docs)
-    fig.add_hrect(y0=0,  y1=5,   fillcolor="green",  opacity=0.09, line_width=0)
-    fig.add_hrect(y0=5,  y1=20,  fillcolor="orange", opacity=0.09, line_width=0)
-    fig.add_hrect(y0=20, y1=100, fillcolor="red",    opacity=0.09, line_width=0)
+    fig.add_hrect(y0=0,      y1=warn_n, fillcolor="green",  opacity=0.09, line_width=0)
+    fig.add_hrect(y0=warn_n, y1=fail_n, fillcolor="orange", opacity=0.09, line_width=0)
+    fig.add_hrect(y0=fail_n, y1=100,    fillcolor="red",    opacity=0.09, line_width=0)
 
     max_y = max(35, max(n_percentage) + 5)
     fig.update_layout(
@@ -122,9 +141,15 @@ def per_base_n_composition(result: PerBaseCompositionResult) -> go.Figure:
 
     return fig
 
-def per_read_quality(result: PerReadQualityResult) -> go.Figure:
+def per_read_quality(
+    result: PerReadQualityResult,
+    config: ThresholdConfig | None = None,
+) -> go.Figure:
     positions = list(range(43))
-
+    threshold_pair = config.min_mean_quality if config else None
+    warn_q = threshold_pair.warn if threshold_pair else 27.0
+    fail_q = threshold_pair.fail if threshold_pair else 20.0
+    
     fig = go.Figure()
 
     fig.add_trace(go.Bar(
@@ -134,10 +159,9 @@ def per_read_quality(result: PerReadQualityResult) -> go.Figure:
     ))
 
     # Background bands matching FastQC's pass/warn/fail thresholds
-    # Values derived from Illumina data (see FastQC docs)
-    fig.add_vrect(x0=27, x1=42, fillcolor="green",  opacity=0.09, line_width=0)
-    fig.add_vrect(x0=20, x1=27, fillcolor="orange", opacity=0.09, line_width=0)
-    fig.add_vrect(x0=0,  x1=20, fillcolor="red",    opacity=0.09, line_width=0)
+    fig.add_vrect(x0=warn_q, x1=42,     fillcolor="green",  opacity=0.09, line_width=0)
+    fig.add_vrect(x0=fail_q, x1=warn_q, fillcolor="orange", opacity=0.09, line_width=0)
+    fig.add_vrect(x0=0,      x1=fail_q, fillcolor="red",    opacity=0.09, line_width=0)
 
     fig.update_layout(
         title="Per Read Quality Scores",
@@ -148,7 +172,10 @@ def per_read_quality(result: PerReadQualityResult) -> go.Figure:
 
     return fig
 
-def per_read_length(result: PerReadLengthResult) -> go.Figure:
+def per_read_length(
+    result: PerReadLengthResult,
+    config: ThresholdConfig | None = None,
+) -> go.Figure:
     min_len = min(result.length_distribution)
     max_len = max(result.length_distribution)
     is_uniform = len(result.length_distribution) == 1
@@ -201,7 +228,10 @@ def per_read_length(result: PerReadLengthResult) -> go.Figure:
 
     return fig
 
-def per_read_gc(result: PerReadGCResult) -> go.Figure:
+def per_read_gc(
+    result: PerReadGCResult,
+    config: ThresholdConfig | None = None,
+) -> go.Figure:
     x = np.arange(101)
     counts = np.array(result.gc_distribution, dtype=float)
     total = counts.sum()

@@ -1,0 +1,36 @@
+# seqqc_thresholds.yaml
+# Threshold configuration for seqqc quality evaluation.
+# All fields are optional, so omit any check you don't want enforced.
+# Omitted thresholds are silently skipped; no error is raised.
+
+# Per-read mean quality (Phred score, minimum)
+# FastQC: warn below 27, fail below 20
+min_mean_quality:
+  warn: 27.0
+  fail: 20.0
+
+# Per-base N content (fraction 0–1, maximum)
+# FastQC: warn above 5%, fail above 20%
+max_n_fraction:
+  warn: 0.05
+  fail: 0.20
+
+# Quality decay constant lambda (maximum; seqqc-specific)
+# Near-zero for high-quality short reads.
+# Values above ~0.01 indicate detectable per-cycle quality loss.
+max_decay_constant:
+  warn: 0.01
+  fail: 0.02
+
+# Decay model R^2 goodness-of-fit (minimum; seqqc-specific)
+# Low R^2 means quality doesn't follow an exponential profile.
+# Only meaningful alongside decay_constant.
+min_decay_r_squared:
+  warn: 0.70
+  fail: 0.50
+
+# Per-base GC content (diff score, maximum)
+# FastQC: warn above 10% diff, fail above 20% diff
+max_gc_content_diff:
+  warn: 0.10
+  fail: 0.20

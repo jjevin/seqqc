@@ -1,6 +1,7 @@
 from pathlib import Path
 import typer
 from seqqc.runner import analyze
+from seqqc.thresholds.schema import ThresholdConfig
 
 app = typer.Typer(
     name="seqqc",
@@ -24,11 +25,26 @@ def run(
         None,
         "--json", "-j",
         help = "Write results as JSON to this path."
+    ),
+    thresholds: Path | None = typer.Option(
+        None,
+        "--thresholds", "-t",
+        help = "Path for metric failure threshold configuration"
     )
 ) -> None:
     """Run quality analysis on a single fastq file"""
-    result = analyze(file, output, json_path=json_output)
+    config = ThresholdConfig.from_yaml(thresholds) if thresholds else None
+    result = analyze(file, output, json_path=json_output, threshold_config=config)
     typer.echo(f"Report written to {output}	({result.read_count.value:,} reads)")
+
+    if not result.evaluation:
+        return None
+    if result.evaluation.failed_checks:
+        typer.echo(f"FAIL: {', '.join(result.evaluation.failed_checks)}", err=True)
+        # TODO: Blocks warnings from printing
+        # raise typer.Exit(code=1)
+    if result.evaluation.warned_checks:
+        typer.echo(f"WARN: {', '.join(result.evaluation.warned_checks)}", err=True)
 
 @app.command()
 def compare(

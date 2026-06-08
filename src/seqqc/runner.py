@@ -10,6 +10,7 @@ from seqqc.metrics.per_read_length import PerReadLengthCalculator
 from seqqc.metrics.per_read_gc import PerReadGCCalculator
 from seqqc.models.results import QCResult
 from seqqc.rendering.html import render_report
+from seqqc.thresholds.schema import ThresholdConfig
 
 # Necessary for clearing calculator instance when calling analyze() twice
 def _default_calculators() -> list[MetricCalculator]:
@@ -26,7 +27,8 @@ def analyze(
     path: Path, 
     output: Path,
     json_path: Path | None = None,
-    calculators: list[MetricCalculator] | None = None
+    calculators: list[MetricCalculator] | None = None,
+    threshold_config: ThresholdConfig | None = None,
 ) -> QCResult:
     if calculators is None:
         calculators = _default_calculators()
@@ -39,9 +41,21 @@ def analyze(
         calc.result_field: calc.finalize()
         for calc in calculators 
     }
-
     result = QCResult(filename=path.name, **metric_results)
-    render_report(result, output)
+
+    if threshold_config is not None:
+        from seqqc.thresholds.evaluator import evaluate
+        from seqqc.models.results import EvaluationResult
+        # TODO: Look up Pydantic model copy logic
+        result = result.model_copy(
+            update = {
+                "evaluation": EvaluationResult(
+                    checks=evaluate(result, threshold_config)
+                )
+            }
+        )
+
+    render_report(result, output, threshold_config)
 
     if json_path is not None:
         json_path.write_text(result.model_dump_json(indent=2), encoding="utf-8")

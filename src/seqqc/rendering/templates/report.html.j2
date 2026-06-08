@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>seqqc — {{ result.filename }}</title>
-  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
-  <style>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>seqqc — {{ result.filename }}</title>
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+    <style>
     body {
       font-family: system-ui, sans-serif;
       max-width: 1100px;
@@ -16,19 +16,82 @@
     h1 { font-size: 1.4rem; font-weight: 600; margin-bottom: 0.25rem; }
     .meta { color: #666; font-size: 0.9rem; margin-bottom: 2rem; }
     .plot { margin-bottom: 2rem; }
-  </style>
-</head>
-<body>
-  <h1>QC Report</h1>
-  <p class="meta">
-    File: <strong>{{ result.filename }}</strong>
-    {% if result.read_count %}
+	.summary-panel {
+	  border: 1px solid #e0e0e0;
+	  border-radius: 8px;
+	  padding: 1.25rem 1.5rem;
+	  margin-bottom: 2rem;
+	}
+	.summary-title { font-size: 1rem; font-weight: 600; margin: 0 0 0.75rem; }
+	.overall { font-weight: 600; margin-bottom: 1rem; }
+	.overall-status  { font-weight: 600; margin-bottom: 1rem; }
+	.overall-pass    { color: #2e7d32; }
+	.overall-warn    { color: #e65100; }
+	.overall-fail    { color: #c62828; }
+	.checks-table { border-collapse: collapse; width: 100%; }
+	.checks-table th, .checks-table td {
+	  text-align: left; padding: 0.4rem 0.75rem;
+	  border-bottom: 1px solid #f0f0f0;
+	}
+	.checks-table th { font-size: 0.8rem; color: #666; text-transform: uppercase; }
+	.badge {
+	  display: inline-block; padding: 0.15rem 0.5rem;
+	  border-radius: 4px; font-size: 0.8rem; font-weight: 600;
+	}
+	.badge-pass      { background: #e8f5e9; color: #2e7d32; }
+	.badge-warn      { background: #fff3e0; color: #e65100; }
+	.badge-fail      { background: #ffebee; color: #c62828; }
+    </style>
+  </head>
+  <body>
+    <h1>QC Report</h1>
+    <p class="meta">
+      File: <strong>{{ result.filename }}</strong>
+      {% if result.read_count %}
       &nbsp;·&nbsp; Reads: <strong>{{ result.read_count.value | int }}</strong>
-    {% endif %}
-  </p>
+      {% endif %}
+    </p>
 
-  {% for plot in plots %}
+	{% if result.evaluation %}
+	<div class="summary-panel">
+	  <h2 class="summary-title">QC Summary</h2>
+	
+	  <div class="overall-status
+	    {% if result.evaluation.failed_checks %}overall-fail
+	    {% elif result.evaluation.warned_checks %}overall-warn
+	    {% else %}overall-pass{% endif %}">
+	    {% if result.evaluation.failed_checks %}
+	      ✗ {{ result.evaluation.failed_checks | length }} check(s) failed
+	      {% if result.evaluation.warned_checks %}
+	        &nbsp;·&nbsp; {{ result.evaluation.warned_checks | length }} warning(s)
+	      {% endif %}
+	    {% elif result.evaluation.warned_checks %}
+	      ⚠ {{ result.evaluation.warned_checks | length }} check(s) warned
+	    {% else %}
+	      ✓ All checks passed
+	    {% endif %}
+	  </div>
+	
+	  <table class="checks-table">
+	    <thead><tr><th>Check</th><th>Status</th></tr></thead>
+	    <tbody>
+	      {% for check, status in result.evaluation.checks.items() %}
+	      <tr>
+	        <td>{{ check | replace("_", " ") | title }}</td>
+	        <td>
+	          <span class="badge badge-{{ status.value }}">
+	            {{ status.value | upper }}
+	          </span>
+	        </td>
+	      </tr>
+	      {% endfor %}
+	    </tbody>
+	  </table>
+	</div>
+	{% endif %}
+  
+	{% for plot in plots %}
     <div class="plot">{{ plot | safe }}</div>
-  {% endfor %}
-</body>
+    {% endfor %}
+  </body>
 </html>

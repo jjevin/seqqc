@@ -67,7 +67,14 @@ _CHECKS: dict[str, Check] = {
             m.c_percentage,
             m.g_percentage,
         ) <= t
+    ),
+    "min_mean_read_quality": Check(
+        config_field="min_mean_read_quality",
+        result_field="per_read_quality",
+        predicate=lambda m, t: np.argmax(m.avg_qualities) >= t,
     )
+    # TODO: Read length distribution
+    # TODO: Per-read GC content
 }
 
 def evaluate(result: QCResult, config: ThresholdConfig) -> dict[str, CheckStatus]:

@@ -146,7 +146,8 @@ def per_read_quality(
     config: ThresholdConfig | None = None,
 ) -> go.Figure:
     positions = list(range(43))
-    threshold_pair = config.min_mean_quality if config else None
+    # threshold_pair = config.min_mean_quality if config else None
+    threshold_pair = config.min_mean_read_quality if config else None
     warn_q = threshold_pair.warn if threshold_pair else 27.0
     fail_q = threshold_pair.fail if threshold_pair else 20.0
     

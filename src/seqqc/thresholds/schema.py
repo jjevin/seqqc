@@ -15,13 +15,14 @@ class ThresholdPair(BaseModel):
     fail: float
 
 class ThresholdConfig(BaseModel):
-    min_mean_quality:     ThresholdPair | None = None # per-read mean quality
-    max_adapter_fraction: ThresholdPair | None = None
-    max_duplication_rate: ThresholdPair | None = None
-    max_n_fraction:       ThresholdPair | None = None
-    max_decay_constant:   ThresholdPair | None = None
-    min_decay_r_squared:  ThresholdPair | None = None
-    max_gc_content_diff:  ThresholdPair | None = None
+    min_mean_quality:      ThresholdPair | None = None # per-read mean quality
+    max_adapter_fraction:  ThresholdPair | None = None
+    max_duplication_rate:  ThresholdPair | None = None
+    max_n_fraction:        ThresholdPair | None = None
+    max_decay_constant:    ThresholdPair | None = None
+    min_decay_r_squared:   ThresholdPair | None = None
+    max_gc_content_diff:   ThresholdPair | None = None
+    min_mean_read_quality: ThresholdPair | None = None
     
     @classmethod
     def from_yaml(cls, path: Path) -> Self:

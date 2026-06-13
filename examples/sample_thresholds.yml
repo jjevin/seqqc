@@ -34,3 +34,7 @@ min_decay_r_squared:
 max_gc_content_diff:
   warn: 0.10
   fail: 0.20
+
+min_mean_read_quality:
+  warn: 27
+  fail: 20

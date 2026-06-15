@@ -29,12 +29,18 @@ min_decay_r_squared:
   warn: 0.70
   fail: 0.50
 
-# Per-base GC content (diff score, maximum)
+# Per-base Sequence Content / Composition (diff score, maximum)
 # FastQC: warn above 10% diff, fail above 20% diff
-max_gc_content_diff:
+max_base_content_diff:
   warn: 0.10
   fail: 0.20
 
 min_mean_read_quality:
   warn: 27
   fail: 20
+
+# Per-Read GC Content (cumulative diff from normal distribution)
+# FastQC: warn above 15% diff, fail above 30% diff
+max_gc_content_diff:
+  warn: 0.15
+  fail: 0.30

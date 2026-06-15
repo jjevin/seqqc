@@ -2,6 +2,8 @@ from __future__ import annotations
 import numpy as np
 from dataclasses import dataclass
 from typing import Callable, Any
+from scipy.ndimage import gaussian_filter1d
+from scipy.stats import norm
 
 from seqqc.models.results import CheckStatus, EvaluationResult, QCResult
 from seqqc.thresholds.schema import ThresholdConfig
@@ -13,7 +15,7 @@ def _weighted_mean(counts: list[int]) -> float:
         return 0.0
     return float(np.average(np.arange(len(arr)), weights=arr))
 
-def _gc_max_diff(
+def _comp_max_diff(
     a_percentage: list,
     t_percentage: list,
     c_percentage: list,
@@ -30,7 +32,27 @@ def _gc_max_diff(
 
     return np.max(max_diff)
 
-# TODO: Check out frozen=True -> indicates immuntable registry?
+def _cum_normal_diff(counts: np.ndarray, mean_gc: float) -> float:
+    # Construct theoretical normal distr
+    x = np.arange(101)
+    total = counts.sum()
+
+    # Express as percentage of reads rather than raw counts
+    frequencies = (counts / total * 100) if total > 0 else counts
+
+    # sigma controls smoothing width -> 3 gives a curve similar to FastQC's
+    smoothed = gaussian_filter1d(frequencies, sigma=3)
+
+    # Theoretical normal distr centered at mean GC with matching std dev
+    std_gc = float(np.sqrt(np.average((x - mean_gc) ** 2, weights=counts))) \
+    	if total >  0 else 1.0
+    theoretical = norm.pdf(x, loc=mean_gc, scale=std_gc)
+    theoretical = theoretical / theoretical.sum() * 100
+
+    diffs = np.abs(frequencies - theoretical)
+    return np.sum(diffs)
+    
+# TODO: Check out frozen=True -> indicates immutable registry?
 @dataclass(frozen=True)
 class Check:
     config_field: str                        # attribute name on ThresholdConfig
@@ -58,10 +80,10 @@ _CHECKS: dict[str, Check] = {
         result_field="per_base_quality",
         predicate=lambda m, t: m.decay_r_squared >= t,
     ),
-    "max_gc_content_diff": Check(
-        config_field="max_gc_content_diff",
+    "max_base_composition_diff": Check(
+        config_field="max_base_content_diff",
         result_field="per_base_composition",
-        predicate=lambda m, t: _gc_max_diff(
+        predicate=lambda m, t: _comp_max_diff(
             m.a_percentage,
             m.t_percentage,
             m.c_percentage,
@@ -72,9 +94,16 @@ _CHECKS: dict[str, Check] = {
         config_field="min_mean_read_quality",
         result_field="per_read_quality",
         predicate=lambda m, t: np.argmax(m.avg_qualities) >= t,
-    )
+    ),
     # TODO: Read length distribution
-    # TODO: Per-read GC content
+    "max_gc_content_diff": Check(
+        config_field="max_gc_content_diff",
+        result_field="per_read_gc",
+        predicate=lambda m, t: _cum_normal_diff(
+            np.array(m.gc_distribution, dtype=float),
+            m.mean_gc
+        )
+    )
 }
 
 def evaluate(result: QCResult, config: ThresholdConfig) -> dict[str, CheckStatus]:

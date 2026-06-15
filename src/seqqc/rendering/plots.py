@@ -59,7 +59,7 @@ def per_base_sequence_composition(
 ) -> go.Figure:
     positions = list(range(1, len(result.a_percentage) + 1))
     
-    threshold_pair = config.max_gc_content_diff if config else None
+    threshold_pair = config.max_base_content_diff if config else None
     warn_n = (threshold_pair.warn * 100) if threshold_pair else 10.0
     fail_n = (threshold_pair.fail * 100) if threshold_pair else 20.0
     

@@ -75,7 +75,7 @@ def per_base_sequence_composition(
     fig = go.Figure()
 
     # Add highlights for regions for warning and failing regions
-    for i, (pos, diff) in enumerate(zip(positions, max_diff)):
+    for pos, diff in zip(positions, max_diff):
         if diff > fail_n:
             color, opacity = "red", 0.12
         elif diff > warn_n:

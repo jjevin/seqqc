@@ -2,11 +2,11 @@ from __future__ import annotations
 import numpy as np
 from dataclasses import dataclass
 from typing import Callable, Any
-from scipy.ndimage import gaussian_filter1d
 from scipy.stats import norm
 
-from seqqc.models.results import CheckStatus, EvaluationResult, QCResult
+from seqqc.models.results import CheckStatus, QCResult
 from seqqc.thresholds.schema import ThresholdConfig
+
 
 # Moved to helper function to guard against ZeroDivisionError
 def _weighted_mean(counts: list[int]) -> float:
@@ -14,6 +14,7 @@ def _weighted_mean(counts: list[int]) -> float:
     if arr.sum() == 0:
         return 0.0
     return float(np.average(np.arange(len(arr)), weights=arr))
+
 
 def _comp_max_diff(
     a_percentage: list,
@@ -32,6 +33,7 @@ def _comp_max_diff(
 
     return np.max(max_diff)
 
+
 def _cum_normal_diff(counts: np.ndarray, mean_gc: float) -> float:
     # Construct theoretical normal distr
     x = np.arange(101)
@@ -40,24 +42,26 @@ def _cum_normal_diff(counts: np.ndarray, mean_gc: float) -> float:
     # Express as percentage of reads rather than raw counts
     frequencies = (counts / total * 100) if total > 0 else counts
 
-    # sigma controls smoothing width -> 3 gives a curve similar to FastQC's
-    smoothed = gaussian_filter1d(frequencies, sigma=3)
-
     # Theoretical normal distr centered at mean GC with matching std dev
-    std_gc = float(np.sqrt(np.average((x - mean_gc) ** 2, weights=counts))) \
-    	if total >  0 else 1.0
+    std_gc = (
+        float(np.sqrt(np.average((x - mean_gc) ** 2, weights=counts)))
+        if total > 0
+        else 1.0
+    )
     theoretical = norm.pdf(x, loc=mean_gc, scale=std_gc)
     theoretical = theoretical / theoretical.sum() * 100
 
     diffs = np.abs(frequencies - theoretical)
     return np.sum(diffs)
-    
+
+
 # TODO: Check out frozen=True -> indicates immutable registry?
 @dataclass(frozen=True)
 class Check:
-    config_field: str                        # attribute name on ThresholdConfig
-    result_field: str                        # attribute name on QCResult
+    config_field: str  # attribute name on ThresholdConfig
+    result_field: str  # attribute name on QCResult
     predicate: Callable[[Any, float], bool]  # (metric_result, threshold) -> pass?
+
 
 _CHECKS: dict[str, Check] = {
     "min_mean_quality": Check(
@@ -88,30 +92,32 @@ _CHECKS: dict[str, Check] = {
             m.t_percentage,
             m.c_percentage,
             m.g_percentage,
-        ) <= t
+        )
+        <= t,
     ),
     "min_mean_read_quality": Check(
         config_field="min_mean_read_quality",
         result_field="per_read_quality",
-        predicate=lambda m, t: np.argmax(m.avg_qualities) >= t,
+        predicate=lambda m, t: float(np.argmax(m.avg_qualities)) >= t,
     ),
     # TODO: Read length distribution
     "max_gc_content_diff": Check(
         config_field="max_gc_content_diff",
         result_field="per_read_gc",
         predicate=lambda m, t: _cum_normal_diff(
-            np.array(m.gc_distribution, dtype=float),
-            m.mean_gc
+            np.array(m.gc_distribution, dtype=float), m.mean_gc
         )
-    )
+        <= t,
+    ),
 }
+
 
 def evaluate(result: QCResult, config: ThresholdConfig) -> dict[str, CheckStatus]:
     checks: dict[str, CheckStatus] = {}
     for name, check in _CHECKS.items():
         # TODO: Check out getattr, super cool use here
         thresholds = getattr(config, check.config_field)
-        metric     = getattr(result, check.result_field)
+        metric = getattr(result, check.result_field)
         if thresholds is None or metric is None:
             continue
         if not check.predicate(metric, thresholds.fail):

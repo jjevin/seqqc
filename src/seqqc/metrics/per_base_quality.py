@@ -1,6 +1,5 @@
 import warnings
 import numpy as np
-from dataclasses import dataclass
 from scipy.optimize import curve_fit, OptimizeWarning
 from typing import ClassVar
 

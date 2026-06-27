@@ -73,6 +73,7 @@ class EvaluationResult(BaseModel):
 
 class QCResult(BaseModel):
     filename: str
+    # TODO: Should we take it for granted read count will be defined?
     read_count:           ReadCountResult          | None = None
     per_base_quality:     PerBaseQualityResult     | None = None
     per_base_composition: PerBaseCompositionResult | None = None

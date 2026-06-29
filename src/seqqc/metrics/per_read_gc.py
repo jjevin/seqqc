@@ -5,6 +5,7 @@ from seqqc.metrics.base import MetricCalculator
 from seqqc.parsers.fastq import Read
 from seqqc.models.results import PerReadGCResult
 
+
 class PerReadGCCalculator(MetricCalculator):
     result_field: ClassVar[str] = "per_read_gc"
 
@@ -25,7 +26,9 @@ class PerReadGCCalculator(MetricCalculator):
         total_gc = self._distribution.sum()
         return PerReadGCResult(
             gc_distribution=self._distribution.tolist(),
-            mean_gc=float(
-                np.average(np.arange(101), weights=self._distribution)
-            ) if total_gc > 0 else 0.0
+            mean_gc=(
+                float(np.average(np.arange(101), weights=self._distribution))
+                if total_gc > 0
+                else 0.0
+            ),
         )

@@ -3,9 +3,11 @@ from dataclasses import dataclass
 from pathlib import Path
 import gzip
 
+
 @dataclass
 class Read:
     """A single FASTQ record"""
+
     name: str
     sequence: str
     quality: list[int]
@@ -17,9 +19,11 @@ class Read:
                 f"quality length {len(self.quality)} for read {self.name}"
             )
 
+
 def _decode_quality(raw_quality: str) -> list[int]:
     """Convert ASCII-encoded quality string to Phred integer scores"""
     return [ord(char) - 33 for char in raw_quality.strip()]
+
 
 def read_fastq(path: Path) -> Iterator[Read]:
     """
@@ -31,7 +35,7 @@ def read_fastq(path: Path) -> Iterator[Read]:
         it = iter(f)
         for raw_name, sequence, _, raw_quality in zip(it, it, it, it):
             yield Read(
-                name = raw_name.strip().lstrip("@"), 
-                sequence = sequence.strip(), 
-                quality = _decode_quality(raw_quality),
+                name=raw_name.strip().lstrip("@"),
+                sequence=sequence.strip(),
+                quality=_decode_quality(raw_quality),
             )

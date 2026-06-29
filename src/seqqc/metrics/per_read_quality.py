@@ -4,6 +4,7 @@ from seqqc.metrics.base import MetricCalculator
 from seqqc.parsers.fastq import Read
 from seqqc.models.results import PerReadQualityResult
 
+
 class PerReadQualityCalculator(MetricCalculator):
     result_field: ClassVar[str] = "per_read_quality"
 
@@ -15,6 +16,4 @@ class PerReadQualityCalculator(MetricCalculator):
         self._qualities[round(avg_quality)] += 1
 
     def finalize(self) -> PerReadQualityResult:
-        return PerReadQualityResult(
-            avg_qualities = self._qualities
-        )
+        return PerReadQualityResult(avg_qualities=self._qualities)

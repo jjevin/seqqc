@@ -5,6 +5,7 @@ from typing import ClassVar
 from seqqc.parsers.fastq import Read
 from seqqc.models.results import MetricResult
 
+
 class MetricCalculator(ABC):
     # Each subclass declares which QCResult field it popualtes
     # ClassVar signals this belongs to the class, not instances
@@ -13,7 +14,7 @@ class MetricCalculator(ABC):
     @abstractmethod
     def update(self, read: Read) -> None:
         """Processing a single read, updating this class' internal state"""
-        ... # TODO: best to use "..." instead of pass?
+        ...  # TODO: best to use "..." instead of pass?
 
     @abstractmethod
     def finalize(self) -> MetricResult:

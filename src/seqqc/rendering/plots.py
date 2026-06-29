@@ -3,44 +3,42 @@ import numpy as np
 from scipy.ndimage import gaussian_filter1d  # For converting hist to distr
 from scipy.stats import norm  # Normal distribution comparison for gc content
 
-from seqqc.models.results import PerBaseQualityResult
+from seqqc.models.results import PerBaseQualityResult, QCResult
 from seqqc.models.results import PerBaseCompositionResult
 from seqqc.models.results import PerReadQualityResult
 from seqqc.models.results import PerReadLengthResult
 from seqqc.models.results import PerReadGCResult
 from seqqc.thresholds.schema import ThresholdConfig
 
+
 def per_base_quality(
     result: PerBaseQualityResult,
     config: ThresholdConfig | None = None,
 ) -> go.Figure:
-    positions = list(range(1, len(result.medians)+1))
+    positions = list(range(1, len(result.medians) + 1))
 
     fig = go.Figure()
 
     # Percentiles as a histogram
-    fig.add_trace(go.Box(
-        q1 = result.first_quartiles,
-        median = result.medians,
-        q3 = result.third_quartiles,
-        lowerfence = result.first_deciles,
-        upperfence = result.ninth_deciles,
-        x = positions,
-        name = "Quality percentiles"
-    ))
+    fig.add_trace(
+        go.Box(
+            q1=result.first_quartiles,
+            median=result.medians,
+            q3=result.third_quartiles,
+            lowerfence=result.first_deciles,
+            upperfence=result.ninth_deciles,
+            x=positions,
+            name="Quality percentiles",
+        )
+    )
 
-    fig.add_trace(go.Scatter(
-        x = positions,
-        y = result.means,
-        mode='lines',
-        name='Means'
-    ))
+    fig.add_trace(go.Scatter(x=positions, y=result.means, mode="lines", name="Means"))
 
     # Background bands matching FastQC's pass/warn/fail thresholds
     # Values derived from Illumina data (see FastQC docs)
-    fig.add_hrect(y0=28, y1=42, fillcolor="green",  opacity=0.09, line_width=0)
+    fig.add_hrect(y0=28, y1=42, fillcolor="green", opacity=0.09, line_width=0)
     fig.add_hrect(y0=20, y1=28, fillcolor="orange", opacity=0.09, line_width=0)
-    fig.add_hrect(y0=0,  y1=20, fillcolor="red",    opacity=0.09, line_width=0)
+    fig.add_hrect(y0=0, y1=20, fillcolor="red", opacity=0.09, line_width=0)
 
     fig.update_layout(
         title="Per-Base Sequence Quality",
@@ -48,21 +46,22 @@ def per_base_quality(
         yaxis_title="Phred quality score",
         yaxis=dict(range=[0, 42]),
         template="plotly_white",
-        hovermode="x unified"
+        hovermode="x unified",
     )
 
     return fig
+
 
 def per_base_sequence_composition(
     result: PerBaseCompositionResult,
     config: ThresholdConfig | None = None,
 ) -> go.Figure:
     positions = list(range(1, len(result.a_percentage) + 1))
-    
+
     threshold_pair = config.max_base_content_diff if config else None
     warn_n = (threshold_pair.warn * 100) if threshold_pair else 10.0
     fail_n = (threshold_pair.fail * 100) if threshold_pair else 20.0
-    
+
     a = np.array(result.a_percentage) * 100
     t = np.array(result.t_percentage) * 100
     c = np.array(result.g_percentage) * 100
@@ -82,16 +81,12 @@ def per_base_sequence_composition(
             color, opacity = "orange", 0.10
         else:
             continue
-        fig.add_vrect(x0=pos - 0.5, x1=pos + 0.5,
-                      fillcolor=color, opacity=opacity, line_width=0)
+        fig.add_vrect(
+            x0=pos - 0.5, x1=pos + 0.5, fillcolor=color, opacity=opacity, line_width=0
+        )
 
     for values, name in [(a, "%A"), (t, "%T"), (g, "%G"), (c, "%C")]:
-        fig.add_trace(go.Scatter(
-            x=positions,
-            y=values,
-            mode="lines",
-            name=name
-        ))
+        fig.add_trace(go.Scatter(x=positions, y=values, mode="lines", name=name))
 
     fig.update_layout(
         title="Per-Base Sequence Content",
@@ -99,10 +94,11 @@ def per_base_sequence_composition(
         yaxis_title="Percent content",
         yaxis=dict(range=[0, 100]),
         template="plotly_white",
-        hovermode="x unified"
+        hovermode="x unified",
     )
 
     return fig
+
 
 def per_base_n_composition(
     result: PerBaseCompositionResult,
@@ -117,17 +113,12 @@ def per_base_n_composition(
 
     fig = go.Figure()
 
-    fig.add_trace(go.Scatter(
-        x = positions,
-        y = n_percentage,
-        mode='lines',
-        name='%N'
-    ))
+    fig.add_trace(go.Scatter(x=positions, y=n_percentage, mode="lines", name="%N"))
 
     # Background bands matching FastQC's pass/warn/fail thresholds
-    fig.add_hrect(y0=0,      y1=warn_n, fillcolor="green",  opacity=0.09, line_width=0)
+    fig.add_hrect(y0=0, y1=warn_n, fillcolor="green", opacity=0.09, line_width=0)
     fig.add_hrect(y0=warn_n, y1=fail_n, fillcolor="orange", opacity=0.09, line_width=0)
-    fig.add_hrect(y0=fail_n, y1=100,    fillcolor="red",    opacity=0.09, line_width=0)
+    fig.add_hrect(y0=fail_n, y1=100, fillcolor="red", opacity=0.09, line_width=0)
 
     max_y = max(35, max(n_percentage) + 5)
     fig.update_layout(
@@ -136,10 +127,11 @@ def per_base_n_composition(
         yaxis_title="Percent content",
         yaxis=dict(range=[0, max_y]),
         template="plotly_white",
-        hovermode="x unified"
+        hovermode="x unified",
     )
 
     return fig
+
 
 def per_read_quality(
     result: PerReadQualityResult,
@@ -150,28 +142,27 @@ def per_read_quality(
     threshold_pair = config.min_mean_read_quality if config else None
     warn_q = threshold_pair.warn if threshold_pair else 27.0
     fail_q = threshold_pair.fail if threshold_pair else 20.0
-    
+
     fig = go.Figure()
 
-    fig.add_trace(go.Bar(
-        x = positions,
-        y = result.avg_qualities,
-        name='Average Read Quality'
-    ))
+    fig.add_trace(
+        go.Bar(x=positions, y=result.avg_qualities, name="Average Read Quality")
+    )
 
     # Background bands matching FastQC's pass/warn/fail thresholds
-    fig.add_vrect(x0=warn_q, x1=42,     fillcolor="green",  opacity=0.09, line_width=0)
+    fig.add_vrect(x0=warn_q, x1=42, fillcolor="green", opacity=0.09, line_width=0)
     fig.add_vrect(x0=fail_q, x1=warn_q, fillcolor="orange", opacity=0.09, line_width=0)
-    fig.add_vrect(x0=0,      x1=fail_q, fillcolor="red",    opacity=0.09, line_width=0)
+    fig.add_vrect(x0=0, x1=fail_q, fillcolor="red", opacity=0.09, line_width=0)
 
     fig.update_layout(
         title="Per Read Quality Scores",
         xaxis_title="Mean read quality (Phred Score)",
         template="plotly_white",
-        hovermode="x unified"
+        hovermode="x unified",
     )
 
     return fig
+
 
 def per_read_length(
     result: PerReadLengthResult,
@@ -185,38 +176,52 @@ def per_read_length(
     pad = max(5, int((max_len - min_len) * 0.1)) if not is_uniform else 10
     x_min = max(0, min_len - pad)
     x_max = max_len + pad
-    
+
     positions = list(range(x_min, x_max + 1))
     # Convert length distribution to list, defaulting to 0 if no value found
     counts = [result.length_distribution.get(p, 0) for p in positions]
-    
+
     fig = go.Figure()
 
-    fig.add_trace(go.Scatter(
-        x = positions,
-        y = counts,
-        mode="lines",
-        fill = "tozeroy",
-        name="Read count",
-        line = dict(color="#2196F3", width=2),
-        fillcolor="rgba(33, 150, 243, 0.2)",
-    ))
+    fig.add_trace(
+        go.Scatter(
+            x=positions,
+            y=counts,
+            mode="lines",
+            fill="tozeroy",
+            name="Read count",
+            line=dict(color="#2196F3", width=2),
+            fillcolor="rgba(33, 150, 243, 0.2)",
+        )
+    )
 
     # Warning annotations if lengths vary
     annotations = []
     if not is_uniform:
-        annotations.append(dict(
-            text="Warning: reads have variable lengths",
-            xref="paper", yref="paper", x=0.01, y=0.97,
-            showarrow=False, font=dict(color="orange", size=12),
-        ))
+        annotations.append(
+            dict(
+                text="Warning: reads have variable lengths",
+                xref="paper",
+                yref="paper",
+                x=0.01,
+                y=0.97,
+                showarrow=False,
+                font=dict(color="orange", size=12),
+            )
+        )
     # Failure annotations if any read has a length of zero
     if 0 in result.length_distribution:
-        annotations.append(dict(
-            text="FAIL: zero-length reads present",
-            xref="paper", yref="paper", x=0.01, y=0.91,
-            showarrow=False, font=dict(color="red", size=12),
-        ))
+        annotations.append(
+            dict(
+                text="FAIL: zero-length reads present",
+                xref="paper",
+                yref="paper",
+                x=0.01,
+                y=0.91,
+                showarrow=False,
+                font=dict(color="red", size=12),
+            )
+        )
 
     fig.update_layout(
         title="Read length distribution",
@@ -224,10 +229,11 @@ def per_read_length(
         yaxis_title="Read count",
         xaxis=dict(tickmode="auto", nticks=10),
         template="plotly_white",
-        annotations=annotations
+        annotations=annotations,
     )
 
     return fig
+
 
 def per_read_gc(
     result: PerReadGCResult,
@@ -244,36 +250,45 @@ def per_read_gc(
     smoothed = gaussian_filter1d(frequencies, sigma=3)
 
     # Theoretical normal distr centered at mean GC with matching std dev
-    std_gc = float(np.sqrt(np.average((x - result.mean_gc) ** 2, weights=counts))) \
-    	if total >  0 else 1.0
+    std_gc = (
+        float(np.sqrt(np.average((x - result.mean_gc) ** 2, weights=counts)))
+        if total > 0
+        else 1.0
+    )
     theoretical = norm.pdf(x, loc=result.mean_gc, scale=std_gc)
     theoretical = theoretical / theoretical.sum() * 100
 
     fig = go.Figure()
 
-    fig.add_trace(go.Bar(
-        x=list(x),
-        y=frequencies.tolist(),
-        name="Observed",
-        marker_color="rgba(33, 150, 243, 0.35)",
-        marker_line_width=0
-    ))
+    fig.add_trace(
+        go.Bar(
+            x=list(x),
+            y=frequencies.tolist(),
+            name="Observed",
+            marker_color="rgba(33, 150, 243, 0.35)",
+            marker_line_width=0,
+        )
+    )
 
-    fig.add_trace(go.Scatter(
-        x=list(x),
-        y=smoothed.tolist(),
-        mode="lines",
-        name="Smoothed",
-        line=dict(color="#1565C0", width=2)
-    ))
+    fig.add_trace(
+        go.Scatter(
+            x=list(x),
+            y=smoothed.tolist(),
+            mode="lines",
+            name="Smoothed",
+            line=dict(color="#1565C0", width=2),
+        )
+    )
 
-    fig.add_trace(go.Scatter(
-        x=list(x),
-        y=theoretical.tolist(),
-        mode="lines",
-        name="Theoretical",
-        line=dict(color="#E53935", width=2, dash="dash"),
-    ))
+    fig.add_trace(
+        go.Scatter(
+            x=list(x),
+            y=theoretical.tolist(),
+            mode="lines",
+            name="Theoretical",
+            line=dict(color="#E53935", width=2, dash="dash"),
+        )
+    )
 
     fig.update_layout(
         title="Per-read GC content",
@@ -282,6 +297,150 @@ def per_read_gc(
         xaxis=dict(range=[0, 100]),
         template="plotly_white",
         bargap=0,
+    )
+
+    return fig
+
+
+# ====================================================================
+# ================ Begin Batch Result Figures Figures ================
+# ====================================================================
+
+
+def batch_mean_quality(results: list[QCResult]) -> go.Figure:
+    """One mean-quality line per sample, overlaid on shared axes"""
+    fig = go.Figure()
+    for result in results:
+        if result.per_base_quality is None:
+            continue
+        positions = list(range(1, len(result.per_base_quality.means) + 1))
+        fig.add_trace(
+            go.Scatter(
+                x=positions,
+                y=result.per_base_quality.means,
+                mode="lines",
+                name=result.filename,
+            )
+        )
+    fig.update_layout(
+        title="Per-Base Mean Quality (All samples)",
+        xaxis_title="Position in read (bp)",
+        yaxis_title="Mean Phred quality score",
+        yaxis=dict(range=[0, 42]),
+        template="plotly_white",
+        hovermode="x unified",
+    )
+    return fig
+
+
+def batch_gc_distribution(results: list[QCResult]) -> go.Figure:
+    """One smoothed GC distribution line per sample"""
+    fig = go.Figure()
+    x = list(range(101))
+    for result in results:
+        if result.per_read_gc is None:
+            continue
+        counts = np.array(result.per_read_gc.gc_distribution, dtype=float)
+        total = counts.sum()
+        if total == 0:
+            continue
+        smoothed = gaussian_filter1d(counts / total * 100, sigma=3)
+        fig.add_trace(
+            go.Scatter(
+                x=x,
+                y=smoothed.tolist(),
+                mode="lines",
+                name=result.filename,
+            )
+        )
+    fig.update_layout(
+        title="Per-read GC content (All samples)",
+        xaxis_title="GC content (%)",
+        yaxis_title="Percentage of reads",
+        template="plotly_white",
+    )
+    return fig
+
+
+def batch_per_read_quality(results: list[QCResult]) -> go.Figure:
+    fig = go.Figure()
+    x = list(range(43))
+
+    for result in results:
+        if result.per_read_quality is None:
+            continue
+        counts = np.array(result.per_read_quality.avg_qualities, dtype=float)
+        total = counts.sum()
+        if total == 0:
+            continue
+        fig.add_trace(
+            go.Scatter(
+                x=x,
+                y=(counts / total * 100).tolist(),
+                mode="lines",
+                name=result.filename,
+            )
+        )
+
+    fig.update_layout(
+        title="Per-read quality distribution (all samples)",
+        xaxis_title="Mean read quality (Phred Score)",
+        yaxis_title="Percentage of reads",
+        template="plotly_white",
+        hovermode="x unified",
+    )
+
+    return fig
+
+
+def batch_read_length(results: list[QCResult]) -> go.Figure:
+    fig = go.Figure()
+
+    # Pass 1: find the global length range (used for defining x-axis range)
+    all_lengths = [
+        length
+        for result in results
+        if result.per_read_length is not None
+        for length in result.per_read_length.length_distribution
+    ]
+    if not all_lengths:
+        return fig
+
+    global_min = min(all_lengths)
+    global_max = max(all_lengths)
+
+    # Mirror single-sample padding logic so uniform batches don't render as a
+    # bare spike against the y-axis
+    is_uniform = global_min == global_max
+    pad = 10 if is_uniform else max(5, int((global_max - global_min) * 0.1))
+    x = list(range(max(0, global_min - pad), global_max + pad + 1))
+
+    # Pass 2: add one normalized trace per sample
+    for result in results:
+        if result.per_read_length is None:
+            continue
+        total = sum(result.per_read_length.length_distribution.values())
+        if total == 0:
+            continue
+        frequencies = [
+            result.per_read_length.length_distribution.get(pos, 0) / total * 100
+            for pos in x
+        ]
+        fig.add_trace(
+            go.Scatter(
+                x=x,
+                y=frequencies,
+                mode="lines",
+                name=result.filename,
+            )
+        )
+
+    fig.update_layout(
+        title="Read length distribution (all samples)",
+        xaxis_title="Read length (bp)",
+        yaxis_title="Percentage of reads",
+        template="plotly_white",
+        hovermode="x unified",
     )
 
     return fig

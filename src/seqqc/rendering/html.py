@@ -7,17 +7,23 @@ from jinja2 import Environment, FileSystemLoader
 from seqqc.models.results import MetricResult, QCResult
 from seqqc.rendering import plots
 from seqqc.thresholds.schema import ThresholdConfig
+from seqqc.comparison.batch import compute_batch_summary
 
 # Mapcs QC result field name to the plot functions for that result
 # Add new metrics and plot functions here
-_PLOT_REGISTRY: dict[str, list[Callable[[MetricResult, ThresholdConfig | None], go.Figure]]] = {
-    "per_base_quality":     [plots.per_base_quality],
-    "per_base_composition": [plots.per_base_sequence_composition,
-                             plots.per_base_n_composition],
-    "per_read_quality":     [plots.per_read_quality],
-    "per_read_length":      [plots.per_read_length],
-    "per_read_gc":          [plots.per_read_gc]
+_PLOT_REGISTRY: dict[
+    str, list[Callable[[MetricResult, ThresholdConfig | None], go.Figure]]
+] = {
+    "per_base_quality": [plots.per_base_quality],
+    "per_base_composition": [
+        plots.per_base_sequence_composition,
+        plots.per_base_n_composition,
+    ],
+    "per_read_quality": [plots.per_read_quality],
+    "per_read_length": [plots.per_read_length],
+    "per_read_gc": [plots.per_read_gc],
 }
+
 
 def _collect_figures(
     result: QCResult,
@@ -30,6 +36,7 @@ def _collect_figures(
             for fn in plot_fns:
                 figures.append(fn(metric_result, threshold_config))
     return figures
+
 
 def render_report(
     result: QCResult,
@@ -46,9 +53,39 @@ def render_report(
 
     env = Environment(
         loader=FileSystemLoader(Path(__file__).parent / "templates"),
-        autoescape=False,   # we handle safetly explicitly with the | safe filter
+        autoescape=False,  # we handle safetly explicitly with the | safe filter
     )
     template = env.get_template("report.html.j2")
     html = template.render(result=result, plots=plot_fragments)
 
+    output.write_text(html, encoding="utf-8")
+
+
+def render_batch_report(
+    results: list[QCResult],
+    output: Path,
+    threshold_config: ThresholdConfig | None = None,
+) -> None:
+    summary = compute_batch_summary(results)
+
+    figures = [
+        plots.batch_mean_quality(results),
+        plots.batch_gc_distribution(results),
+        plots.batch_per_read_quality(results),
+        plots.batch_read_length(results),
+    ]
+
+    plot_fragments = [
+        fig.to_html(full_html=False, include_plotlyjs=False) for fig in figures
+    ]
+
+    env = Environment(
+        loader=FileSystemLoader(Path(__file__).parent / "templates"), autoescape=False
+    )
+    template = env.get_template("batch_report.html.j2")
+    html = template.render(
+        results=results,
+        summary=summary,
+        plots=plot_fragments,
+    )
     output.write_text(html, encoding="utf-8")

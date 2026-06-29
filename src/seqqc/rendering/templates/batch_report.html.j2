@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>seqqc — Batch Report ({{ results | length }} samples)</title>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+      color: #1a1a1a;
+    }
+    h1 { font-size: 1.4rem; font-weight: 600; margin-bottom: 0.25rem; }
+    h2 { font-size: 1rem; font-weight: 600; margin: 0 0 0.75rem; }
+    .meta { color: #666; font-size: 0.9rem; margin-bottom: 2rem; }
+    .plot { margin-bottom: 2rem; }
+    .section { margin-bottom: 2.5rem; }
+
+    /* Summary and threshold panels */
+    .summary-panel {
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .overall-status { font-weight: 600; margin-bottom: 1rem; }
+    .overall-pass   { color: #2e7d32; }
+    .overall-warn   { color: #e65100; }
+    .overall-fail   { color: #c62828; }
+    .outlier-list {
+      margin: 0.5rem 0 0;
+      padding-left: 1.25rem;
+      color: #444;
+      font-size: 0.9rem;
+      line-height: 1.8;
+    }
+
+    /* Badges */
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .badge-pass { background: #e8f5e9; color: #2e7d32; }
+    .badge-warn { background: #fff3e0; color: #e65100; }
+    .badge-fail { background: #ffebee; color: #c62828; }
+    .badge-na   { background: #f5f5f5; color: #9e9e9e; }
+
+    /* Shared table foundation */
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 0.875rem;
+    }
+    th {
+      text-align: left;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      border-bottom: 2px solid #e0e0e0;
+      white-space: nowrap;
+    }
+    td {
+      padding: 0.45rem 0.75rem;
+      border-bottom: 1px solid #f0f0f0;
+      vertical-align: middle;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #fafafa; }
+
+    /* Per-sample metrics table */
+    .metrics-table { margin-bottom: 0; }
+    .metrics-table td.filename {
+      font-family: monospace;
+      font-size: 0.8rem;
+      color: #333;
+      max-width: 240px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .metrics-table td { text-align: right; }
+    .metrics-table td.filename { text-align: left; }
+    .outlier-cell {
+      background: #fff8e1;
+      color: #e65100;
+      font-weight: 600;
+    }
+    tr:hover .outlier-cell { background: #fff3cd; }
+
+    /* Threshold matrix */
+    .matrix-table td { text-align: center; }
+    .matrix-table td.filename { text-align: left; }
+    .matrix-table th:first-child { text-align: left; }
+  </style>
+</head>
+<body>
+
+  <h1>Batch QC Report</h1>
+  <p class="meta">
+    <strong>{{ results | length }}</strong> sample{{ 's' if results | length != 1 }}
+    {% if summary.outlier_flags %}
+      &nbsp;·&nbsp; outliers in <strong>{{ summary.outlier_flags | length }}</strong> metric(s)
+    {% endif %}
+  </p>
+
+  {# ── Batch overview panel ─────────────────────────────────────────────── #}
+  <div class="summary-panel">
+    <h2>Batch Overview</h2>
+    {% if summary.outlier_flags %}
+      <div class="overall-status overall-warn">
+        ⚠ Statistical outliers detected (> 2 SD from batch mean)
+      </div>
+      <ul class="outlier-list">
+        {% for metric, flagged_samples in summary.outlier_flags.items() %}
+          <li>
+            <strong>{{ metric | replace("_", " ") | title }}</strong>:
+            {{ flagged_samples | join(", ") }}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="overall-status overall-pass">
+        ✓ No statistical outliers detected across all metrics
+      </div>
+    {% endif %}
+  </div>
+
+  {# ── Per-sample metrics table ─────────────────────────────────────────── #}
+  <div class="section">
+    <h2>Sample Metrics</h2>
+    <table class="metrics-table">
+      <thead>
+        <tr>
+          <th>Sample</th>
+          <th>Reads</th>
+          <th>Mean Quality</th>
+          <th>GC %</th>
+          <th>Max N %</th>
+          <th>Decay λ</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for sample in summary.samples %}
+          {% set outlier_read_count    = sample.filename in summary.outlier_flags.get('read_count',    []) %}
+          {% set outlier_mean_quality  = sample.filename in summary.outlier_flags.get('mean_quality',  []) %}
+          {% set outlier_mean_gc       = sample.filename in summary.outlier_flags.get('mean_gc',       []) %}
+          {% set outlier_n_fraction    = sample.filename in summary.outlier_flags.get('max_n_fraction',[]) %}
+          {% set outlier_decay         = sample.filename in summary.outlier_flags.get('decay_constant',[]) %}
+          <tr>
+            <td class="filename" title="{{ sample.filename }}">{{ sample.filename }}</td>
+            <td class="{{ 'outlier-cell' if outlier_read_count }}">
+              {% if sample.read_count is not none %}{{ sample.read_count }}{% else %}—{% endif %}
+            </td>
+            <td class="{{ 'outlier-cell' if outlier_mean_quality }}">
+              {% if sample.mean_quality is not none %}{{ sample.mean_quality | round(1) }}{% else %}—{% endif %}
+            </td>
+            <td class="{{ 'outlier-cell' if outlier_mean_gc }}">
+              {% if sample.mean_gc is not none %}{{ sample.mean_gc | round(1) }}%{% else %}—{% endif %}
+            </td>
+            <td class="{{ 'outlier-cell' if outlier_n_fraction }}">
+              {% if sample.max_n_fraction is not none %}{{ (sample.max_n_fraction * 100) | round(2) }}%{% else %}—{% endif %}
+            </td>
+            <td class="{{ 'outlier-cell' if outlier_decay }}">
+              {% if sample.decay_constant is not none %}{{ sample.decay_constant | round(4) }}{% else %}—{% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {# ── Threshold matrix (only rendered when thresholds were supplied) ───── #}
+  {% set results_with_eval = results | selectattr('evaluation') | list %}
+  {% if results_with_eval %}
+    {% set check_names = results_with_eval[0].evaluation.checks.keys() | list %}
+    <div class="section">
+      <h2>Threshold Results</h2>
+      <table class="matrix-table">
+        <thead>
+          <tr>
+            <th>Sample</th>
+            {% for check in check_names %}
+              <th>{{ check | replace("_", " ") | title }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for result in results %}
+            <tr>
+              <td class="filename" title="{{ result.filename }}">{{ result.filename }}</td>
+              {% if result.evaluation %}
+                {% for check in check_names %}
+                  {% set status = result.evaluation.checks.get(check) %}
+                  <td>
+                    {% if status %}
+                      <span class="badge badge-{{ status.value }}">{{ status.value | upper }}</span>
+                    {% else %}
+                      <span class="badge badge-na">N/A</span>
+                    {% endif %}
+                  </td>
+                {% endfor %}
+              {% else %}
+                {% for _ in check_names %}
+                  <td><span class="badge badge-na">—</span></td>
+                {% endfor %}
+              {% endif %}
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
+
+  {# ── Comparison plots ─────────────────────────────────────────────────── #}
+  {% if plots %}
+    <div class="section">
+      <h2>Comparison Plots</h2>
+      {% for plot in plots %}
+        <div class="plot">{{ plot | safe }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+</body>
+</html>

@@ -1,6 +1,6 @@
 from pathlib import Path
 import typer
-from seqqc.runner import analyze
+from seqqc.runner import analyze, batch_analyze
 from seqqc.thresholds.schema import ThresholdConfig
 
 app = typer.Typer(
@@ -61,12 +61,33 @@ def compare(
         "-o",
         help="Path for the output html report.",
     ),
+    thresholds: Path | None = typer.Option(
+        None,
+        "--thresholds",
+        "-t",
+        help="Path for metric failure threshold configuration",
+    ),
 ) -> None:
     """Run quality analysis across multiple FASTQ files and compare results"""
     if len(files) < 2:
         typer.echo("Error: compare requires at least two files.", err=True)
         raise typer.Exit(code=1)
-    typer.echo(f"Comparing {len(files)} files -> {output}")
+
+    config = ThresholdConfig.from_yaml(thresholds) if thresholds else None
+    typer.echo(f"Processing {len(files)} files...")
+    results = batch_analyze(files, output, threshold_config=config)
+
+    failing = [
+        r.filename for r in results if r.evaluation and r.evaluation.failed_checks
+    ]
+    if failing:
+        typer.echo(
+            f"FAIL: {len(failing)} sample(s) failed thresholds: "
+            f"{', '.join(failing)}, err=True"
+        )
+        raise typer.Exit(code=1)
+
+    typer.echo(f"Batch report written to {output}  ({len(results)} samples)")
 
 
 if __name__ == "__main__":

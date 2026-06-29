@@ -31,6 +31,8 @@ jobs:
             mkdir -p examples
             seqqc run data/reads/tiny_n_L001_R1_xxx.fastq.gz \
               --output examples/sample_report.html
+            seqqc compare data/reads/tiny_n_L00*_R*_xxx.fastq.gz \
+              --output examples/sample_batch_report.html
 
         - name: Commit report if changed
           run: |

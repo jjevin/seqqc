@@ -41,13 +41,20 @@ Requires Python >= 3.11
 seqqc run sample.fastq.gz
 
 # Specify output path
-seqqc run sample.fast.gz --output reports/sample_report.html
+seqqc run sample.fast.gz \
+    --output reports/sample_report.html \
+    --thresholds examples/sample_thresholds.yml \
+    --json reports/sample_report.json
 
-# Compare multiple files (coming soon)
-seqqc compare sample1.fastq.gz sample2.fastq.gz --output batch_report.html
+# Compare multiple files
+seqqc compare sample1.fastq.gz sample2.fastq.gz \
+    --output reports/sample_batch_report.html \
+    --thresholds examples/sample_thresholds.yml \
+    --json reports/sample_batch_report.json
 ```
 
 A sample report generated from a small test dataset is available at [`examples/sample_report.html`](examples/sample_report.html).
+A similar example for batch comparisons based on the same dataset is available at [`examples/sample_batch_report.html`](examples/sample_batch_report.html).
 
 ---
 
@@ -69,15 +76,15 @@ A sample report generated from a small test dataset is available at [`examples/s
 | Sequence duplication rate     | Planned  | Hash-based estimation                                 |
 | Adapter contamination         | Planned  | Common Illumina adapter sequences                     |
 | Overrepresented sequences     | Planned  | K-mer frequency analysis                              |
-| Quality decay rate            | Planned  | Fitted exponential decay constant                     |
+| Quality decay rate            | Complete | Fitted exponential decay constant                     |
 
 ### `seqqc compare` - Multi-file analysis
 
-| Feature                           | Status  | Notes                                               |
-|-----------------------------------|---------|-----------------------------------------------------|
-| Batch report gneration            | Planned | Combined HTML report for N Samples                  |
-| Cross-sample outlier detection    | Planned | Flag samples 2+ standard deviations from batch mean |
-| Configurable pass/fail thresholds | Planned | YAML config, pipline-compatible exit codes          |
+| Feature                           | Status      | Notes                                               |
+|-----------------------------------|-------------|-----------------------------------------------------|
+| Batch report generation           | Complete    | Combined HTML report for N Samples                  |
+| Cross-sample outlier detection    | Compelte    | Flag samples 2+ standard deviations from batch mean |
+| Configurable pass/fail thresholds | In progress | YAML config, pipline-compatible exit codes          |
 
 
 ### Output formats
